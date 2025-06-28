@@ -168,152 +168,123 @@ export function ScoringPlayCard({ play, className }: ScoringPlayCardProps) {
   const basesSituation = getBasesSituation(play.runners);
 
   return (
-    <div className={cn("showstats-card p-5 space-y-6", className)}>
-      {/* 게임 상황 헤더 */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-        <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-          {/* 이닝 정보 */}
-          <div className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-blue-500/20 rounded-full">
-            <span className="text-base sm:text-lg font-bold text-blue-400">
+    <div
+      className={cn("border border-border rounded-lg p-6 space-y-4", className)}
+    >
+      {/* 상황 정보 헤더 - 한 줄로 깔끔하게 */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {/* 이닝 */}
+          <div className="flex items-center gap-1 text-sm">
+            <span className="font-semibold text-foreground">
               {inningInfo.inningNum}
             </span>
-            <span className="text-xs sm:text-sm font-medium text-blue-300">
-              {inningInfo.halfText}
-            </span>
+            <span className="text-muted-foreground">{inningInfo.halfText}</span>
           </div>
 
+          {/* 구분선 */}
+          <div className="w-px h-4 bg-border"></div>
+
           {/* 아웃카운트 */}
-          <div className="flex items-center gap-2 px-2 sm:px-3 py-1 bg-orange-500/20 rounded-full">
-            <span className="text-xs sm:text-sm font-medium text-orange-300">
-              OUT
-            </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">OUT</span>
             <div className="flex gap-1">
               {Array.from({ length: 3 }, (_, i) => (
                 <div
                   key={i}
-                  className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full border ${
-                    i < outsInfo.outs
-                      ? "bg-orange-400 border-orange-400"
-                      : "bg-transparent border-orange-400/50"
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    i < outsInfo.outs ? "bg-orange-500" : "bg-muted"
                   }`}
                 />
               ))}
             </div>
           </div>
 
-          {/* 베이스 상황 */}
-          <div className="flex items-center gap-2 px-2 sm:px-3 py-1 bg-green-500/20 rounded-full">
-            <span className="text-xs sm:text-sm font-medium text-green-300">
-              {basesSituation}
-            </span>
-          </div>
+          {/* 구분선 */}
+          <div className="w-px h-4 bg-border"></div>
 
-          {/* 득점 - 모바일에서는 같은 줄에 표시 */}
-          <div className="flex items-center gap-2 px-2 sm:px-3 py-1 bg-yellow-500/20 rounded-full sm:hidden">
-            <span className="text-base font-bold text-yellow-400">
-              +{play.runsScored}
-            </span>
-            <span className="text-xs text-yellow-300">점</span>
-          </div>
+          {/* 베이스 상황 */}
+          <span className="text-sm text-muted-foreground">
+            {basesSituation}
+          </span>
         </div>
 
-        {/* 득점 - 데스크톱에서만 별도 표시 */}
-        <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-yellow-500/20 rounded-full">
-          <span className="text-lg font-bold text-yellow-400">
-            +{play.runsScored}
-          </span>
-          <span className="text-sm text-yellow-300">점</span>
+        {/* 득점 */}
+        <div className="flex items-center gap-1 px-2 py-1 bg-green-500/10 rounded text-green-600">
+          <span className="text-sm font-semibold">+{play.runsScored}</span>
+          <span className="text-xs">점</span>
         </div>
       </div>
 
-      {/* 상세 정보 */}
-      <div className="flex flex-col md:grid md:grid-cols-12 gap-4">
-        {/* 모바일: 세로 배치, 데스크톱: 가로 배치 */}
-
-        {/* 베이스 다이아몬드와 주자 정보 - 항상 가로 배치 */}
-        <div className="flex gap-4 md:col-span-5">
-          {/* 베이스 다이아몬드 */}
-          <div className="flex justify-center items-center flex-shrink-0">
-            <BaseballDiamond
-              runners={play.runners}
-              size="xs"
-              showLabels={false}
-              className="sm:hidden"
-            />
-            <BaseballDiamond
-              runners={play.runners}
-              size="sm"
-              showLabels={false}
-              className="hidden sm:block"
-            />
-          </div>
-
-          {/* 주자 정보 목록 */}
-          <div className="flex flex-col justify-center space-y-1 md:space-y-2 flex-1 min-w-0">
-            {runnerInfo.length > 0 ? (
-              runnerInfo.map((runner, idx) => (
-                <div key={idx} className="flex items-center gap-2 text-xs">
-                  <span className="font-medium text-blue-400 w-6 flex-shrink-0">
-                    {runner.base}
-                  </span>
-                  <span className="text-blue-300 px-2 py-1 bg-blue-500/10 rounded inline-block">
-                    {runner.name}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <div className="text-xs text-muted-foreground px-2 py-1">
-                무주자
-              </div>
-            )}
-          </div>
+      {/* 메인 컨텐츠 영역 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* 베이스볼 다이아몬드 - 패딩으로 영역 확보 */}
+        <div className="flex justify-center lg:justify-start p-4">
+          <BaseballDiamond
+            runners={play.runners}
+            size="sm"
+            showLabels={false}
+          />
         </div>
 
         {/* 플레이 정보 */}
-        <div className="md:col-span-7 flex flex-col justify-center space-y-3">
-          {/* 타자 정보 */}
+        <div className="lg:col-span-2 space-y-3">
+          {/* 타자와 결과 */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-            <div className="flex items-center gap-2 px-2 py-1 bg-primary/10 rounded flex-wrap">
-              <span className="font-bold text-lg">{play.batter}</span>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-foreground">
+                {play.batter}
+              </span>
               <span
-                className={`px-2 py-1 rounded text-xs font-medium ${
+                className={`px-2 py-0.5 rounded text-xs font-medium ${
                   play.batterOwner === "내 계정"
-                    ? "bg-blue-500/20 text-blue-400"
-                    : "bg-purple-500/20 text-purple-400"
+                    ? "bg-blue-500/10 text-blue-600"
+                    : "bg-purple-500/10 text-purple-600"
                 }`}
               >
                 {play.batterOwner}
               </span>
             </div>
 
-            <div className="flex items-center justify-between sm:justify-start gap-3">
-              <div className="flex items-center gap-2 relative py-2">
-                <div className="text-lg">🏏</div>
-                <div className="relative w-8 h-6 overflow-visible">
-                  <div className="absolute left-0 w-2 h-2 bg-white rounded-full animate-[baseBall_1.5s_ease-out_infinite] shadow-sm"></div>
-                </div>
-              </div>
-
-              <div
-                className={`px-3 py-1 rounded-full text-sm font-bold border-2 flex items-center ${
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">→</span>
+              <span
+                className={`px-3 py-1 rounded-full text-sm font-medium ${
                   play.result.includes("홈런")
-                    ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/50"
+                    ? "bg-yellow-500/10 text-yellow-600 border border-yellow-500/20"
                     : play.result.includes("안타") ||
                         play.result.includes("2루타") ||
                         play.result.includes("3루타")
-                      ? "bg-green-500/20 text-green-400 border-green-500/50"
-                      : "bg-primary/20 text-primary border-primary/50"
+                      ? "bg-green-500/10 text-green-600 border border-green-500/20"
+                      : "bg-muted/50 text-foreground border border-border"
                 }`}
               >
                 {play.result}
-              </div>
+              </span>
             </div>
           </div>
 
+          {/* 주자 정보 (있는 경우만) */}
+          {runnerInfo.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {runnerInfo.map((runner, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-1 px-2 py-1 bg-muted/30 rounded text-xs"
+                >
+                  <span className="font-medium text-blue-600">
+                    {runner.base}
+                  </span>
+                  <span className="text-muted-foreground">{runner.name}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* 플레이 설명 */}
-          <div className="text-sm leading-relaxed bg-muted/20 p-3 rounded">
+          <p className="text-sm text-muted-foreground leading-relaxed">
             {play.description}
-          </div>
+          </p>
         </div>
       </div>
     </div>

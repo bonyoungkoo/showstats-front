@@ -10,7 +10,6 @@ const GRADE_ORDER: StatGrade[] = [
   "good",
   "very-good",
   "excellent",
-  "unicum",
 ];
 
 export function StatLegend() {
@@ -20,13 +19,13 @@ export function StatLegend() {
         <CardTitle className="text-lg">통계 등급 범례</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2">
+        <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-8 gap-2">
           {GRADE_ORDER.map((grade) => {
             const config = STAT_COLORS[grade];
             return (
               <div
                 key={grade}
-                className={`text-center p-2 rounded text-xs ${config.color} ${config.bgColor}`}
+                className={`text-center p-2 rounded text-xs ${config.bgColor}`}
               >
                 {config.label}
               </div>

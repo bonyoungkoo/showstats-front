@@ -14,18 +14,97 @@ export interface ScoringPlayData {
   description: string;
 }
 
+interface AtBatDetail {
+  batter: string;
+  inning: number;
+  isTopInning: boolean;
+  log: string[];
+  result: string;
+  rbi: number;
+  risp: boolean;
+  runnersBefore: { [key: string]: number };
+  outsBefore: number;
+  owner: "my" | "friend";
+}
+
 interface ScoringSummaryProps {
   plays: ScoringPlayData[];
+  allAtBats?: AtBatDetail[]; // 전체 타석 데이터 추가
   className?: string;
 }
 
-export function ScoringSummary({ plays, className }: ScoringSummaryProps) {
+export function ScoringSummary({
+  plays,
+  allAtBats,
+  className,
+}: ScoringSummaryProps) {
   // 득점 상황 분석
   const totalRuns = plays.reduce((sum, play) => sum + play.runsScored, 0);
   const totalPlays = plays.length;
 
   // 주자 상황별 통계 (boolean 또는 string 값 모두 처리)
   const hasRunner = (runner: boolean | string | undefined) => Boolean(runner);
+
+  // 전체 타석에서 주자 상황별 통계 계산
+  const calculateRunnerSituations = (atBats: AtBatDetail[]) => {
+    return {
+      empty: atBats.filter(
+        (ab) =>
+          Object.keys(ab.runnersBefore).length === 0 ||
+          Object.values(ab.runnersBefore).every((base) => !base)
+      ).length,
+      risp: atBats.filter((ab) =>
+        Object.values(ab.runnersBefore).some((base) => base && base >= 2)
+      ).length,
+      loaded: atBats.filter((ab) => {
+        const runners = Object.values(ab.runnersBefore);
+        return (
+          runners.includes(1) && runners.includes(2) && runners.includes(3)
+        );
+      }).length,
+      first: atBats.filter((ab) => {
+        const runners = Object.values(ab.runnersBefore);
+        return (
+          runners.includes(1) && !runners.includes(2) && !runners.includes(3)
+        );
+      }).length,
+      second: atBats.filter((ab) => {
+        const runners = Object.values(ab.runnersBefore);
+        return (
+          !runners.includes(1) && runners.includes(2) && !runners.includes(3)
+        );
+      }).length,
+      third: atBats.filter((ab) => {
+        const runners = Object.values(ab.runnersBefore);
+        return (
+          !runners.includes(1) && !runners.includes(2) && runners.includes(3)
+        );
+      }).length,
+      firstSecond: atBats.filter((ab) => {
+        const runners = Object.values(ab.runnersBefore);
+        return (
+          runners.includes(1) && runners.includes(2) && !runners.includes(3)
+        );
+      }).length,
+      firstThird: atBats.filter((ab) => {
+        const runners = Object.values(ab.runnersBefore);
+        return (
+          runners.includes(1) && !runners.includes(2) && runners.includes(3)
+        );
+      }).length,
+      secondThird: atBats.filter((ab) => {
+        const runners = Object.values(ab.runnersBefore);
+        return (
+          !runners.includes(1) && runners.includes(2) && runners.includes(3)
+        );
+      }).length,
+    };
+  };
+
+  // 전체 타석에서의 주자 상황별 총 횟수
+  const totalRunnerSituations = allAtBats
+    ? calculateRunnerSituations(allAtBats)
+    : null;
 
   const runnerSituations = {
     empty: plays.filter(
@@ -114,18 +193,30 @@ export function ScoringSummary({ plays, className }: ScoringSummaryProps) {
     {} as Record<number, { plays: number; runs: number }>
   );
 
-  // 득점 타입 분석
+  // 득점 타입 분석 (RBI가 있는 경우만)
   const scoringTypes = {
-    homerun: plays.filter((p) => p.result.includes("홈런")).length,
-    hit: plays.filter(
-      (p) => p.result.includes("안타") && !p.result.includes("홈런")
+    homerun: plays.filter(
+      (p) => p.runsScored > 0 && p.result.includes("home run")
     ).length,
-    sacrifice: plays.filter((p) => p.result.includes("희생")).length,
+    hit: plays.filter(
+      (p) =>
+        p.runsScored > 0 &&
+        (p.result.includes("single") ||
+          p.result.includes("double") ||
+          p.result.includes("triple")) &&
+        !p.result.includes("home run")
+    ).length,
+    sacrifice: plays.filter(
+      (p) => p.runsScored > 0 && p.result.includes("sacrifice")
+    ).length,
     other: plays.filter(
       (p) =>
-        !p.result.includes("홈런") &&
-        !p.result.includes("안타") &&
-        !p.result.includes("희생")
+        p.runsScored > 0 &&
+        !p.result.includes("home run") &&
+        !p.result.includes("single") &&
+        !p.result.includes("double") &&
+        !p.result.includes("triple") &&
+        !p.result.includes("sacrifice")
     ).length,
   };
 
@@ -187,8 +278,11 @@ export function ScoringSummary({ plays, className }: ScoringSummaryProps) {
                       showLabels={false}
                     />
                     <span className="text-xs text-center">주자없음</span>
-                    <span className="font-bold text-sm">
-                      {runnerSituations.empty}회
+                    <span
+                      className={`font-bold text-sm ${runnerSituations.empty > 0 ? "showstats-highlight" : ""}`}
+                    >
+                      {runnerSituations.empty}회 /{" "}
+                      {totalRunnerSituations?.empty || 0}회
                     </span>
                   </div>
                   <div className="flex flex-col items-center gap-2 p-3 bg-muted/10 rounded">
@@ -198,8 +292,11 @@ export function ScoringSummary({ plays, className }: ScoringSummaryProps) {
                       showLabels={false}
                     />
                     <span className="text-xs text-center">1루</span>
-                    <span className="font-bold text-sm">
-                      {runnerSituations.first}회
+                    <span
+                      className={`font-bold text-sm ${runnerSituations.first > 0 ? "showstats-highlight" : ""}`}
+                    >
+                      {runnerSituations.first}회 /{" "}
+                      {totalRunnerSituations?.first || 0}회
                     </span>
                   </div>
                   <div className="flex flex-col items-center gap-2 p-3 bg-muted/10 rounded">
@@ -209,8 +306,11 @@ export function ScoringSummary({ plays, className }: ScoringSummaryProps) {
                       showLabels={false}
                     />
                     <span className="text-xs text-center">2루</span>
-                    <span className="font-bold text-sm">
-                      {runnerSituations.second}회
+                    <span
+                      className={`font-bold text-sm ${runnerSituations.second > 0 ? "showstats-highlight" : ""}`}
+                    >
+                      {runnerSituations.second}회 /{" "}
+                      {totalRunnerSituations?.second || 0}회
                     </span>
                   </div>
                   <div className="flex flex-col items-center gap-2 p-3 bg-muted/10 rounded">
@@ -220,8 +320,11 @@ export function ScoringSummary({ plays, className }: ScoringSummaryProps) {
                       showLabels={false}
                     />
                     <span className="text-xs text-center">3루</span>
-                    <span className="font-bold text-sm">
-                      {runnerSituations.third}회
+                    <span
+                      className={`font-bold text-sm ${runnerSituations.third > 0 ? "showstats-highlight" : ""}`}
+                    >
+                      {runnerSituations.third}회 /{" "}
+                      {totalRunnerSituations?.third || 0}회
                     </span>
                   </div>
                 </div>
@@ -240,8 +343,11 @@ export function ScoringSummary({ plays, className }: ScoringSummaryProps) {
                       showLabels={false}
                     />
                     <span className="text-xs text-center">1·2루</span>
-                    <span className="font-bold text-sm">
-                      {runnerSituations.firstSecond}회
+                    <span
+                      className={`font-bold text-sm ${runnerSituations.firstSecond > 0 ? "showstats-highlight" : ""}`}
+                    >
+                      {runnerSituations.firstSecond}회 /{" "}
+                      {totalRunnerSituations?.firstSecond || 0}회
                     </span>
                   </div>
                   <div className="flex flex-col items-center gap-2 p-3 bg-muted/10 rounded">
@@ -251,8 +357,11 @@ export function ScoringSummary({ plays, className }: ScoringSummaryProps) {
                       showLabels={false}
                     />
                     <span className="text-xs text-center">1·3루</span>
-                    <span className="font-bold text-sm">
-                      {runnerSituations.firstThird}회
+                    <span
+                      className={`font-bold text-sm ${runnerSituations.firstThird > 0 ? "showstats-highlight" : ""}`}
+                    >
+                      {runnerSituations.firstThird}회 /{" "}
+                      {totalRunnerSituations?.firstThird || 0}회
                     </span>
                   </div>
                   <div className="flex flex-col items-center gap-2 p-3 bg-muted/10 rounded">
@@ -262,8 +371,11 @@ export function ScoringSummary({ plays, className }: ScoringSummaryProps) {
                       showLabels={false}
                     />
                     <span className="text-xs text-center">2·3루</span>
-                    <span className="font-bold text-sm">
-                      {runnerSituations.secondThird}회
+                    <span
+                      className={`font-bold text-sm ${runnerSituations.secondThird > 0 ? "showstats-highlight" : ""}`}
+                    >
+                      {runnerSituations.secondThird}회 /{" "}
+                      {totalRunnerSituations?.secondThird || 0}회
                     </span>
                   </div>
                   <div className="flex flex-col items-center gap-2 p-3 bg-muted/10 rounded">
@@ -273,8 +385,11 @@ export function ScoringSummary({ plays, className }: ScoringSummaryProps) {
                       showLabels={false}
                     />
                     <span className="text-xs text-center">만루</span>
-                    <span className="font-bold text-sm">
-                      {runnerSituations.loaded}회
+                    <span
+                      className={`font-bold text-sm ${runnerSituations.loaded > 0 ? "showstats-highlight" : ""}`}
+                    >
+                      {runnerSituations.loaded}회 /{" "}
+                      {totalRunnerSituations?.loaded || 0}회
                     </span>
                   </div>
                 </div>
@@ -292,15 +407,25 @@ export function ScoringSummary({ plays, className }: ScoringSummaryProps) {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span>0아웃</span>
-                  <span className="font-bold">{outCounts.noOuts}회</span>
+                  <span
+                    className={`font-bold ${outCounts.noOuts > 0 ? "showstats-highlight" : ""}`}
+                  >
+                    {outCounts.noOuts}회
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span>1아웃</span>
-                  <span className="font-bold">{outCounts.oneOut}회</span>
+                  <span
+                    className={`font-bold ${outCounts.oneOut > 0 ? "showstats-highlight" : ""}`}
+                  >
+                    {outCounts.oneOut}회
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span>2아웃</span>
-                  <span className="font-bold showstats-highlight">
+                  <span
+                    className={`font-bold ${outCounts.twoOuts > 0 ? "showstats-highlight" : ""}`}
+                  >
                     {outCounts.twoOuts}회
                   </span>
                 </div>
@@ -347,28 +472,44 @@ export function ScoringSummary({ plays, className }: ScoringSummaryProps) {
                     <span className="w-3 h-3 bg-yellow-500 rounded-full"></span>
                     홈런
                   </span>
-                  <span className="font-bold">{scoringTypes.homerun}회</span>
+                  <span
+                    className={`font-bold ${scoringTypes.homerun > 0 ? "showstats-highlight" : ""}`}
+                  >
+                    {scoringTypes.homerun}회
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="flex items-center gap-2">
                     <span className="w-3 h-3 bg-green-500 rounded-full"></span>
                     안타
                   </span>
-                  <span className="font-bold">{scoringTypes.hit}회</span>
+                  <span
+                    className={`font-bold ${scoringTypes.hit > 0 ? "showstats-highlight" : ""}`}
+                  >
+                    {scoringTypes.hit}회
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="flex items-center gap-2">
                     <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
                     희생타
                   </span>
-                  <span className="font-bold">{scoringTypes.sacrifice}회</span>
+                  <span
+                    className={`font-bold ${scoringTypes.sacrifice > 0 ? "showstats-highlight" : ""}`}
+                  >
+                    {scoringTypes.sacrifice}회
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="flex items-center gap-2">
                     <span className="w-3 h-3 bg-gray-500 rounded-full"></span>
                     기타
                   </span>
-                  <span className="font-bold">{scoringTypes.other}회</span>
+                  <span
+                    className={`font-bold ${scoringTypes.other > 0 ? "showstats-highlight" : ""}`}
+                  >
+                    {scoringTypes.other}회
+                  </span>
                 </div>
               </div>
             </CardContent>

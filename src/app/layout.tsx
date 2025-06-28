@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import { QueryProviders } from "./providers";
 
 export const metadata: Metadata = {
   title: "ShowStats - MLB The Show 통계 분석",
@@ -24,11 +25,13 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased min-h-screen bg-background text-foreground">
-        <div className="flex flex-col min-h-screen">
-          <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
-        </div>
+        <QueryProviders>
+          <div className="flex flex-col min-h-screen">
+            <Header />
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </div>
+        </QueryProviders>
       </body>
     </html>
   );
