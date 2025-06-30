@@ -144,7 +144,7 @@ function GamesPageContent() {
 
       // 병렬 API 호출
       const requests = gamesToCheck.map((game) =>
-        fetch("http://localhost:3003/api/games/check-type", {
+        fetch("/api/games/check-type", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

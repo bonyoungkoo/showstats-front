@@ -79,7 +79,7 @@ async function fetchGameAnalysis(
   gameId: string,
   teamName?: string
 ): Promise<GameAnalysisResponse> {
-  const response = await fetch("http://localhost:3003/api/analyze", {
+  const response = await fetch("/api/analyze", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

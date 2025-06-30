@@ -17,7 +17,7 @@ export interface UserProfile {
 
 async function fetchUserProfile(username: string): Promise<UserProfile> {
   // 현재는 가상의 API이지만, 실제 API가 있다면 여기서 호출
-  const response = await fetch(`http://localhost:3003/api/users/${username}`, {
+  const response = await fetch(`/api/users/${username}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",

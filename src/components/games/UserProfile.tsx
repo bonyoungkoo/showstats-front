@@ -73,9 +73,7 @@ export default function UserProfile({
     const fetchUserData = async () => {
       try {
         setLoading(true);
-        const response = await fetch(
-          `http://localhost:3003/api/users/${username}`
-        );
+        const response = await fetch(`/api/users/${username}`);
 
         if (!response.ok) {
           console.error("User API 호출 실패:", response.status);
