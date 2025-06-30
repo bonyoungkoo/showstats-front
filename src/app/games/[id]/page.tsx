@@ -23,157 +23,27 @@ import Image from "next/image";
 import { StatValue } from "@/components/ui/stat-value";
 import { StatLegend } from "@/components/ui/stat-legend";
 import { ComparisonChart } from "@/components/ui/comparison-chart";
-import { useEffect, useState } from "react";
 import {
   ScoringSummary,
   ScoringPlayData,
 } from "@/components/ui/scoring-summary";
 import { ScoringPlayCard } from "@/components/ui/baseball-diamond";
 import { parseWeatherWithTemperature } from "@/lib/weather-utils";
-
-// API 응답 타입 정의
-interface BattingStats {
-  atBats: number;
-  hits: number;
-  homeRuns: number;
-  rbis: number;
-  walks: number;
-  strikeouts: number;
-  average: number;
-  obp: number;
-  slg: number;
-  ops: number;
-  rispAtBats: number;
-  rispHits: number;
-  rispAverage: number;
-}
-
-interface AtBatDetail {
-  batter: string;
-  inning: number;
-  isTopInning: boolean;
-  log: string[];
-  result: string;
-  rbi: number;
-  risp: boolean;
-  runnersBefore: { [key: string]: number };
-  outsBefore: number;
-  owner: "my" | "friend";
-}
-
-interface GameAnalysisResponse {
-  myStats: BattingStats;
-  friendStats: BattingStats;
-  validation: {
-    expectedHits: number;
-    actualHits: number;
-    expectedRuns: number;
-    actualRuns: number;
-    hitsMatch: boolean;
-    runsMatch: boolean;
-  };
-  atBatDetails: AtBatDetail[];
-  ownership: {
-    myAtBats: AtBatDetail[];
-    friendAtBats: AtBatDetail[];
-  };
-  // 실제 게임 스코어 (lineScore 객체 안에 있음)
-  lineScore: {
-    home_runs: string;
-    away_runs: string;
-    created_at: string;
-    home_full_name: string;
-    away_full_name: string;
-    homeTeamLogo?: string;
-    awayTeamLogo?: string;
-    // ... 기타 필드들
-  };
-  gameMetadata: {
-    stadium: string;
-    elevation: string;
-    hittingDifficulty: string;
-    pitchingDifficulty: string;
-    gameType: string;
-    attendance: string;
-    weather: string;
-    wind: string;
-    scheduledFirstPitch: string;
-    umpires: {
-      hp: string;
-      first: string;
-      second: string;
-      third: string;
-    };
-  };
-}
+import { useGameAnalysis } from "@/hooks/useGameAnalysis";
 
 export default function GameDetailPage() {
   const params = useParams();
   const searchParams = useSearchParams();
-  const gameId = params.id;
+  const gameId = params.id as string;
   const username = searchParams.get("username") || "sunken_kim";
   const teamName = searchParams.get("teamName");
 
-  const [gameData, setGameData] = useState<GameAnalysisResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // sessionStorage 의존성 제거 - URL 파라미터로 모든 정보 전달받음
-
-  useEffect(() => {
-    const fetchGameData = async () => {
-      try {
-        setLoading(true);
-        console.log(
-          `게임 분석 API 호출: username=${username}, gameId=${gameId}`
-        );
-
-        const response = await fetch("http://localhost:3003/api/analyze", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username: username,
-            gameId: gameId,
-            teamName: teamName,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`API 호출 실패: ${response.status}`);
-        }
-
-        const data: GameAnalysisResponse = await response.json();
-        console.log("게임 분석 API 응답:", data);
-        console.log("🔍 lineScore.home_runs:", data.lineScore?.home_runs);
-        console.log("🔍 lineScore.away_runs:", data.lineScore?.away_runs);
-        console.log("🔍 lineScore.created_at:", data.lineScore?.created_at);
-        console.log(
-          "🔍 lineScore.home_full_name:",
-          data.lineScore?.home_full_name
-        );
-        console.log(
-          "🔍 lineScore.away_full_name:",
-          data.lineScore?.away_full_name
-        );
-        console.log("🔍 lineScore.homeTeamLogo:", data.lineScore?.homeTeamLogo);
-        console.log("🔍 lineScore.awayTeamLogo:", data.lineScore?.awayTeamLogo);
-        console.log("🔍 우리팀 teamName:", teamName);
-        console.log("🔍 전체 키들:", Object.keys(data));
-        setGameData(data);
-      } catch (err) {
-        console.error("게임 분석 API 에러:", err);
-        setError(err instanceof Error ? err.message : "알 수 없는 오류");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (gameId && username) {
-      fetchGameData();
-    }
-  }, [gameId, username, teamName]);
+  // TanStack Query 사용
+  const {
+    data: gameData,
+    isLoading: loading,
+    error,
+  } = useGameAnalysis(username, gameId, teamName || undefined);
 
   const getComparisonIcon = (myValue: number, teammateValue: number) => {
     if (myValue > teammateValue)
@@ -207,7 +77,9 @@ export default function GameDetailPage() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              {error || "게임 데이터를 불러올 수 없습니다."}
+              {error?.message ||
+                String(error) ||
+                "게임 데이터를 불러올 수 없습니다."}
             </p>
             <p className="text-sm text-muted-foreground mt-2">
               gameId: {gameId}, username: {username}
@@ -329,9 +201,9 @@ export default function GameDetailPage() {
                 </h2>
                 <div className="flex items-center justify-center gap-2">
                   <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center overflow-hidden">
-                    {gameData.lineScore?.homeTeamLogo ? (
+                    {gameData.homeTeamLogo ? (
                       <Image
-                        src={gameData.lineScore.homeTeamLogo}
+                        src={gameData.homeTeamLogo}
                         alt={gameData.lineScore.home_full_name || "홈팀"}
                         width={48}
                         height={48}
@@ -439,8 +311,8 @@ export default function GameDetailPage() {
                       // 우리팀이 홈팀이면 어웨이팀 로고, 어웨이팀이면 홈팀 로고
                       const opponentLogo =
                         gameData.lineScore?.home_full_name === teamName
-                          ? gameData.lineScore?.awayTeamLogo
-                          : gameData.lineScore?.homeTeamLogo;
+                          ? gameData.awayTeamLogo
+                          : gameData.homeTeamLogo;
 
                       const opponentName =
                         gameData.lineScore?.home_full_name === teamName
@@ -575,7 +447,7 @@ export default function GameDetailPage() {
       {/* 게임 요약 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="border-border">
-          <CardContent className="pt-6">
+          <CardContent>
             <div className="text-center">
               <div className="text-2xl font-bold showstats-highlight">
                 {gameData.validation.actualHits}
@@ -585,7 +457,7 @@ export default function GameDetailPage() {
           </CardContent>
         </Card>
         <Card className="border-border">
-          <CardContent className="pt-6">
+          <CardContent>
             <div className="text-center">
               <div className="text-2xl font-bold showstats-highlight">
                 {gameData.validation.actualRuns}
@@ -595,7 +467,7 @@ export default function GameDetailPage() {
           </CardContent>
         </Card>
         <Card className="border-border">
-          <CardContent className="pt-6">
+          <CardContent>
             <div className="text-center">
               <div className="text-2xl font-bold showstats-highlight">
                 {gameData.atBatDetails.length}

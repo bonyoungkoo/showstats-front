@@ -7,7 +7,7 @@ export interface GameListItem {
   away_full_name: string;
   home_runs: string;
   away_runs: string;
-  is_coop: boolean;
+  isSingleGame: boolean;
   homeTeamLogo?: string;
   awayTeamLogo?: string;
 }
@@ -24,7 +24,7 @@ interface ApiGameHistoryItem {
   away_full_name: string;
   home_runs: string;
   away_runs: string;
-  isTeamGame?: boolean;
+  isSingleGame?: boolean;
   homeTeamLogo?: string;
   awayTeamLogo?: string;
 }
@@ -52,6 +52,7 @@ async function fetchUserGames(username: string): Promise<UserGamesResponse> {
   }
 
   const data: ApiResponse = await response.json();
+  console.log(data);
 
   // API 응답을 UserGamesResponse 형식으로 변환
   if (data.game_history && Array.isArray(data.game_history)) {
@@ -63,7 +64,7 @@ async function fetchUserGames(username: string): Promise<UserGamesResponse> {
         away_full_name: game.away_full_name,
         home_runs: game.home_runs,
         away_runs: game.away_runs,
-        is_coop: game.isTeamGame || false,
+        isSingleGame: game.isSingleGame ?? true,
         homeTeamLogo: game.homeTeamLogo,
         awayTeamLogo: game.awayTeamLogo,
       })),
