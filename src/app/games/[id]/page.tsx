@@ -29,8 +29,8 @@ import { ScoringSummary } from "@/components/ui/scoring-summary";
 export default function GameDetailPage() {
   const params = useParams();
   const searchParams = useSearchParams();
-  const gameId = params.id as string;
-  const username = searchParams.get("username") || "sunken_kim";
+  const gameId = params?.id as string;
+  const username = searchParams?.get("username") || "sunken_kim";
 
   // TanStack Query 사용
   const {
