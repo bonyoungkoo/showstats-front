@@ -3,6 +3,7 @@ import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { QueryProviders } from "./providers";
+import ServiceWorkerRegister from "@/components/common/ServiceWorkerRegister"; // ✅ 추가
 
 export const metadata: Metadata = {
   title: "ShowStats - MLB The Show 통계 분석",
@@ -31,6 +32,7 @@ export default function RootLayout({
             <main className="flex-1">{children}</main>
             <Footer />
           </div>
+          <ServiceWorkerRegister /> {/* ✅ 여기서 Service Worker 등록 */}
         </QueryProviders>
       </body>
     </html>
