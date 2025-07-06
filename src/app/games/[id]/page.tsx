@@ -43,7 +43,7 @@ export default function GameDetailPage() {
     data: gameData,
     isLoading: loading,
     error,
-  } = useGameAnalysis(username, gameId, teamName || undefined);
+  } = useGameAnalysis(username, gameId);
 
   const getComparisonIcon = (myValue: number, teammateValue: number) => {
     if (myValue > teammateValue)
@@ -91,14 +91,11 @@ export default function GameDetailPage() {
   }
 
   // 타석 수 계산 (plateAppearances)
-  const myPlateAppearances = gameData.myStats.atBats + gameData.myStats.walks;
-  const friendPlateAppearances =
-    gameData.friendStats.atBats + gameData.friendStats.walks;
+  const hostPlateAppearances = gameData.home.hostStats.atBats + gameData.home.hostStats.walks
+  const teammatePlateAppearances = gameData.home.teammateStats.atBats + gameData.home.teammateStats.walks
 
   // 득점권 상황 판별 함수
-  const isRunnerInScoringPosition = (runnersBefore: {
-    [key: string]: number;
-  }) => {
+  const isRunnerInScoringPosition = (runnersBefore: Record<string, number>) => {
     // 2루 또는 3루에 주자가 있으면 득점권
     return (
       runnersBefore["2"] ||
@@ -108,8 +105,8 @@ export default function GameDetailPage() {
   };
 
   // 득점 상황 데이터 변환 (RBI가 있는 타석만)
-  const scoringPlays: ScoringPlayData[] = gameData.atBatDetails
-    .filter((atBat) => atBat.rbi > 0)
+  const scoringPlays: ScoringPlayData[] = gameData.home.ownership.totalAtBats
+    .filter((atBat) => atBat.rbi && atBat.rbi > 0)
     .map((atBat, index) => ({
       id: `scoring-${index}`,
       inning: atBat.inning,
@@ -117,70 +114,73 @@ export default function GameDetailPage() {
       outs: atBat.outsBefore || 0,
       runners: {
         first:
-          atBat.runnersBefore["1"] ||
-          Object.values(atBat.runnersBefore).find((base) => base === 1)
+          atBat.runnersBefore && 
+          (atBat.runnersBefore["1"] ||
+          Object.values(atBat.runnersBefore).find((base) => base === 1))
             ? "주자"
             : false,
         second:
-          atBat.runnersBefore["2"] ||
-          Object.values(atBat.runnersBefore).find((base) => base === 2)
+          atBat.runnersBefore &&
+          (atBat.runnersBefore["2"] ||
+          Object.values(atBat.runnersBefore).find((base) => base === 2))
             ? "주자"
             : false,
         third:
-          atBat.runnersBefore["3"] ||
-          Object.values(atBat.runnersBefore).find((base) => base === 3)
+          atBat.runnersBefore &&
+          (atBat.runnersBefore["3"] ||
+          Object.values(atBat.runnersBefore).find((base) => base === 3))
             ? "주자"
             : false,
       },
       batter: atBat.batter,
-      batterOwner: atBat.owner === "my" ? "내 계정" : "팀원",
-      result: atBat.result.replace("_", " "),
-      runsScored: atBat.rbi,
+      batterOwner: atBat.isHost ? "호스트" : "팀원",
+      result: atBat.result?.replace("_", " ") ?? "",
+      runsScored: atBat.rbi ?? 0,
       description: atBat.log.join(" "),
     }));
 
   // 득점권 상황 분석
-  const rispSituations = gameData.atBatDetails.filter((atBat) =>
-    isRunnerInScoringPosition(atBat.runnersBefore)
-  );
+  const rispSituations = gameData.home.ownership.totalAtBats.filter((atBat) =>
+    isRunnerInScoringPosition(atBat.runnersBefore ?? {})
+  );  
 
-  const myRispAtBats = rispSituations.filter((atBat) => atBat.owner === "my");
-  const friendRispAtBats = rispSituations.filter(
+  const hostRispAtBats = rispSituations.filter((atBat) => atBat.owner === "my");
+  const teammateRispAtBats = rispSituations.filter(
     (atBat) => atBat.owner === "friend"
   );
 
-  const myRispHits = myRispAtBats.filter(
+  const hostRispHits = hostRispAtBats.filter(
     (atBat) =>
-      atBat.result.includes("single") ||
-      atBat.result.includes("double") ||
-      atBat.result.includes("triple") ||
-      atBat.result.includes("home_run")
+      atBat.result?.includes("single") ||
+      atBat.result?.includes("double") ||
+      atBat.result?.includes("triple") ||
+      atBat.result?.includes("home_run")
   );
 
-  const friendRispHits = friendRispAtBats.filter(
+  const teammateRispHits = teammateRispAtBats.filter(
     (atBat) =>
-      atBat.result.includes("single") ||
-      atBat.result.includes("double") ||
-      atBat.result.includes("triple") ||
-      atBat.result.includes("home_run")
+      atBat.result?.includes("single") ||
+      atBat.result?.includes("double") ||
+      atBat.result?.includes("triple") ||
+      atBat.result?.includes("home_run")
   );
 
   // 클러치 상황 분석 (득점권 + 2아웃)
-  const clutchSituations = gameData.atBatDetails.filter(
+  const clutchSituations = gameData.home.ownership.totalAtBats.filter(
     (atBat) =>
-      isRunnerInScoringPosition(atBat.runnersBefore) && atBat.outsBefore === 2
+      isRunnerInScoringPosition(atBat.runnersBefore ?? {}) && atBat.outsBefore === 2
   );
 
-  const myClutchAtBats = clutchSituations.filter(
-    (atBat) => atBat.owner === "my"
+  const hostClutchAtBats = clutchSituations.filter(
+    (atBat) => atBat.isHost
   );
-  const friendClutchAtBats = clutchSituations.filter(
-    (atBat) => atBat.owner === "friend"
+  const teammateClutchAtBats = clutchSituations.filter(
+    (atBat) => !atBat.isHost
   );
 
-  const myClutchSuccess = myClutchAtBats.filter((atBat) => atBat.rbi > 0);
-  const friendClutchSuccess = friendClutchAtBats.filter(
-    (atBat) => atBat.rbi > 0
+  const myClutchSuccess = hostClutchAtBats.filter((atBat) => (atBat.rbi ?? 0) > 0);
+  const friendClutchSuccess = teammateClutchAtBats.filter(
+    (atBat) => (atBat.rbi ?? 0) > 0
   );
 
   return (
@@ -203,8 +203,8 @@ export default function GameDetailPage() {
                   <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center overflow-hidden">
                     {gameData.homeTeamLogo ? (
                       <Image
-                        src={gameData.homeTeamLogo}
-                        alt={gameData.lineScore.home_full_name || "홈팀"}
+                        src={gameData.awayTeamLogo ?? ""}
+                        alt={gameData.lineScore.away_full_name || "어웨이팀"}
                         width={48}
                         height={48}
                         className="rounded-full object-cover"
@@ -224,114 +224,43 @@ export default function GameDetailPage() {
                     // 실제 게임 스코어 표시 (홈팀이 내 팀이라고 가정)
                     <>
                       <span className="text-blue-400">
-                        {gameData.lineScore.home_runs}
+                        {gameData.lineScore.away_runs}
                       </span>
                       <span className="text-gray-400 mx-2">:</span>
                       <span className="text-red-400">
-                        {gameData.lineScore.away_runs}
+                        {gameData.lineScore.home_runs}
                       </span>
                     </>
                   ) : (
                     // 기존 방식 (fallback)
                     <>
                       <span className="text-blue-400">
-                        {gameData.validation.actualRuns}
+                        {gameData.validation.away.actualRuns}
                       </span>
                       <span className="text-gray-400 mx-2">:</span>
                       <span className="text-red-400">
-                        {gameData.validation.expectedRuns}
+                        {gameData.validation.home.expectedRuns}
                       </span>
                     </>
                   )}
                 </div>
-                <div className="text-center">
-                  <Badge
-                    className={
-                      gameData.lineScore?.home_runs !== undefined &&
-                      gameData.lineScore?.away_runs !== undefined
-                        ? parseInt(gameData.lineScore.home_runs) >
-                          parseInt(gameData.lineScore.away_runs)
-                          ? "bg-green-600"
-                          : parseInt(gameData.lineScore.home_runs) <
-                              parseInt(gameData.lineScore.away_runs)
-                            ? "bg-red-600"
-                            : "bg-yellow-600"
-                        : gameData.validation.actualRuns >
-                            gameData.validation.expectedRuns
-                          ? "bg-green-600"
-                          : gameData.validation.actualRuns <
-                              gameData.validation.expectedRuns
-                            ? "bg-red-600"
-                            : "bg-yellow-600"
-                    }
-                  >
-                    {gameData.lineScore?.home_runs !== undefined &&
-                    gameData.lineScore?.away_runs !== undefined
-                      ? parseInt(gameData.lineScore.home_runs) >
-                        parseInt(gameData.lineScore.away_runs)
-                        ? "승리"
-                        : parseInt(gameData.lineScore.home_runs) <
-                            parseInt(gameData.lineScore.away_runs)
-                          ? "패배"
-                          : "무승부"
-                      : gameData.validation.actualRuns >
-                          gameData.validation.expectedRuns
-                        ? "승리"
-                        : gameData.validation.actualRuns <
-                            gameData.validation.expectedRuns
-                          ? "패배"
-                          : "무승부"}
-                  </Badge>
-                  <div className="text-sm text-gray-300 mt-1">
-                    {gameData.lineScore?.created_at ||
-                      gameData.gameMetadata.scheduledFirstPitch ||
-                      "날짜 정보 없음"}
-                  </div>
-                </div>
+               
               </div>
 
               <div className="flex-1 text-center">
                 <h2 className="text-2xl md:text-3xl font-bold mb-2">
-                  {(() => {
-                    // 우리팀이 아닌 팀을 상대팀으로 표시
-                    if (
-                      gameData.lineScore?.home_full_name &&
-                      gameData.lineScore?.away_full_name
-                    ) {
-                      return gameData.lineScore.home_full_name === teamName
-                        ? gameData.lineScore.away_full_name
-                        : gameData.lineScore.home_full_name;
-                    }
-                    return "상대팀";
-                  })()}
+                  {gameData.lineScore.home_full_name}
                 </h2>
                 <div className="flex items-center justify-center gap-2">
                   <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center overflow-hidden">
-                    {(() => {
-                      // 우리팀이 홈팀이면 어웨이팀 로고, 어웨이팀이면 홈팀 로고
-                      const opponentLogo =
-                        gameData.lineScore?.home_full_name === teamName
-                          ? gameData.awayTeamLogo
-                          : gameData.homeTeamLogo;
-
-                      const opponentName =
-                        gameData.lineScore?.home_full_name === teamName
-                          ? gameData.lineScore?.away_full_name
-                          : gameData.lineScore?.home_full_name;
-
-                      return opponentLogo ? (
-                        <Image
-                          src={opponentLogo}
-                          alt={opponentName || "상대팀"}
-                          width={48}
-                          height={48}
-                          className="rounded-full object-cover"
-                          onError={() => console.log("상대팀 로고 로드 실패")}
-                        />
-                      ) : (
-                        <span className="text-white text-2xl">⚾</span>
-                      );
-                    })()}
+                    <Image
+                      src={gameData.homeTeamLogo ?? ""}
+                      alt={gameData.lineScore.home_full_name ?? ""}
+                      width={48}
+                      height={48}
+                      className="rounded-full object-cover"
+                      onError={() => console.log("상대팀 로고 로드 실패")}
+                    />
                   </div>
                 </div>
               </div>
@@ -380,26 +309,26 @@ export default function GameDetailPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 pt-6 border-t border-white/20">
               <div className="text-center">
                 <div className="text-lg font-bold mb-2 text-blue-400">
-                  내 기록
+                  어웨이팀 기록
                 </div>
                 <div className="text-sm text-gray-300">
-                  {gameData.myStats.hits}H • {gameData.myStats.rbis}RBI •{" "}
-                  {gameData.myStats.homeRuns}HR
+                  {gameData.away.totalStats.hits}H • {gameData.away.totalStats.rbis}RBI •{" "}
+                  {gameData.away.totalStats.homeRuns}HR
                 </div>
                 <div className="text-lg font-bold">
-                  AVG {gameData.myStats.average.toFixed(3)}
+                  AVG {gameData.away.totalStats.average.toFixed(3)}
                 </div>
               </div>
               <div className="text-center">
                 <div className="text-lg font-bold mb-2 text-red-400">
-                  팀원 기록
+                  홈팀 기록
                 </div>
                 <div className="text-sm text-gray-300">
-                  {gameData.friendStats.hits}H • {gameData.friendStats.rbis}RBI
-                  • {gameData.friendStats.homeRuns}HR
+                  {gameData.home.totalStats.hits}H • {gameData.home.totalStats.rbis}RBI
+                  • {gameData.home.totalStats.homeRuns}HR
                 </div>
                 <div className="text-lg font-bold">
-                  AVG {gameData.friendStats.average.toFixed(3)}
+                  AVG {gameData.home.totalStats.average.toFixed(3)}
                 </div>
               </div>
             </div>
@@ -409,12 +338,12 @@ export default function GameDetailPage() {
               <Badge
                 variant="outline"
                 className={`border-white/30 ${
-                  gameData.validation.hitsMatch && gameData.validation.runsMatch
+                  gameData.validation.home.hitsMatch && gameData.validation.home.runsMatch
                     ? "text-green-400"
                     : "text-yellow-400"
                 }`}
               >
-                {gameData.validation.hitsMatch && gameData.validation.runsMatch
+                {gameData.validation.home.hitsMatch && gameData.validation.home.runsMatch
                   ? "✓ 데이터 검증 완료"
                   : "⚠ 데이터 검증 필요"}
               </Badge>
@@ -450,7 +379,7 @@ export default function GameDetailPage() {
           <CardContent>
             <div className="text-center">
               <div className="text-2xl font-bold showstats-highlight">
-                {gameData.validation.actualHits}
+                {gameData.validation.home.actualHits}
               </div>
               <p className="text-sm text-muted-foreground">총 안타</p>
             </div>
@@ -460,7 +389,7 @@ export default function GameDetailPage() {
           <CardContent>
             <div className="text-center">
               <div className="text-2xl font-bold showstats-highlight">
-                {gameData.validation.actualRuns}
+                {gameData.validation.home.actualRuns}
               </div>
               <p className="text-sm text-muted-foreground">총 득점</p>
             </div>
@@ -470,7 +399,7 @@ export default function GameDetailPage() {
           <CardContent>
             <div className="text-center">
               <div className="text-2xl font-bold showstats-highlight">
-                {gameData.atBatDetails.length}
+                {gameData.home.ownership.totalAtBats.length}
               </div>
               <p className="text-sm text-muted-foreground">총 타석</p>
             </div>
@@ -525,25 +454,25 @@ export default function GameDetailPage() {
                 <div className="text-center">
                   <div className="text-muted-foreground">주심</div>
                   <div className="font-medium">
-                    {gameData.gameMetadata.umpires.hp}
+                    {gameData.gameMetadata.umpires?.hp}
                   </div>
                 </div>
                 <div className="text-center">
                   <div className="text-muted-foreground">1루심</div>
                   <div className="font-medium">
-                    {gameData.gameMetadata.umpires.first}
+                    {gameData.gameMetadata.umpires?.first}
                   </div>
                 </div>
                 <div className="text-center">
                   <div className="text-muted-foreground">2루심</div>
                   <div className="font-medium">
-                    {gameData.gameMetadata.umpires.second}
+                    {gameData.gameMetadata.umpires?.second}
                   </div>
                 </div>
                 <div className="text-center">
                   <div className="text-muted-foreground">3루심</div>
                   <div className="font-medium">
-                    {gameData.gameMetadata.umpires.third}
+                    {gameData.gameMetadata.umpires?.third}
                   </div>
                 </div>
               </div>
@@ -575,7 +504,7 @@ export default function GameDetailPage() {
                       <TableHeader>
                         <TableRow className="border-border">
                           <TableHead>항목</TableHead>
-                          <TableHead className="text-center">나</TableHead>
+                          <TableHead className="text-center">호스트</TableHead>
                           <TableHead className="text-center">팀원</TableHead>
                           <TableHead className="text-center">비교</TableHead>
                         </TableRow>
@@ -584,75 +513,75 @@ export default function GameDetailPage() {
                         <TableRow className="border-border">
                           <TableCell>타석 (PA)</TableCell>
                           <TableCell className="text-center font-bold">
-                            {myPlateAppearances}
+                            {hostPlateAppearances}
                           </TableCell>
                           <TableCell className="text-center font-bold">
-                            {friendPlateAppearances}
+                            {teammatePlateAppearances}
                           </TableCell>
                           <TableCell className="text-center">
                             {getComparisonIcon(
-                              myPlateAppearances,
-                              friendPlateAppearances
+                              hostPlateAppearances,
+                              teammatePlateAppearances
                             )}
                           </TableCell>
                         </TableRow>
                         <TableRow className="border-border">
                           <TableCell>타수 (AB)</TableCell>
                           <TableCell className="text-center font-bold">
-                            {gameData.myStats.atBats}
+                            {gameData.home.hostStats.atBats}
                           </TableCell>
                           <TableCell className="text-center font-bold">
-                            {gameData.friendStats.atBats}
+                            {gameData.home.teammateStats.atBats}
                           </TableCell>
                           <TableCell className="text-center">
                             {getComparisonIcon(
-                              gameData.myStats.atBats,
-                              gameData.friendStats.atBats
+                              gameData.home.hostStats.atBats,
+                              gameData.home.teammateStats.atBats
                             )}
                           </TableCell>
                         </TableRow>
                         <TableRow className="border-border">
                           <TableCell>안타 (H)</TableCell>
                           <TableCell className="text-center font-bold">
-                            {gameData.myStats.hits}
+                            {gameData.home.hostStats.hits}
                           </TableCell>
                           <TableCell className="text-center font-bold">
-                            {gameData.friendStats.hits}
+                            {gameData.home.teammateStats.hits}
                           </TableCell>
                           <TableCell className="text-center">
                             {getComparisonIcon(
-                              gameData.myStats.hits,
-                              gameData.friendStats.hits
+                              gameData.home.hostStats.hits,
+                              gameData.home.teammateStats.hits
                             )}
                           </TableCell>
                         </TableRow>
                         <TableRow className="border-border">
                           <TableCell>홈런 (HR)</TableCell>
                           <TableCell className="text-center font-bold">
-                            {gameData.myStats.homeRuns}
+                            {gameData.home.hostStats.homeRuns}
                           </TableCell>
                           <TableCell className="text-center font-bold">
-                            {gameData.friendStats.homeRuns}
+                            {gameData.home.teammateStats.homeRuns}
                           </TableCell>
                           <TableCell className="text-center">
                             {getComparisonIcon(
-                              gameData.myStats.homeRuns,
-                              gameData.friendStats.homeRuns
+                              gameData.home.hostStats.homeRuns,
+                              gameData.home.teammateStats.homeRuns
                             )}
                           </TableCell>
                         </TableRow>
                         <TableRow className="border-border">
                           <TableCell>타점 (RBI)</TableCell>
                           <TableCell className="text-center font-bold">
-                            {gameData.myStats.rbis}
+                            {gameData.home.hostStats.rbis}
                           </TableCell>
                           <TableCell className="text-center font-bold">
-                            {gameData.friendStats.rbis}
+                            {gameData.home.teammateStats.rbis}
                           </TableCell>
                           <TableCell className="text-center">
                             {getComparisonIcon(
-                              gameData.myStats.rbis,
-                              gameData.friendStats.rbis
+                              gameData.home.hostStats.rbis,
+                              gameData.home.teammateStats.rbis
                             )}
                           </TableCell>
                         </TableRow>
@@ -671,7 +600,7 @@ export default function GameDetailPage() {
                       <TableHeader>
                         <TableRow className="border-border">
                           <TableHead>항목</TableHead>
-                          <TableHead className="text-center">나</TableHead>
+                          <TableHead className="text-center">호스트</TableHead>
                           <TableHead className="text-center">팀원</TableHead>
                           <TableHead className="text-center">비교</TableHead>
                         </TableRow>
@@ -681,22 +610,22 @@ export default function GameDetailPage() {
                           <TableCell>타율 (AVG)</TableCell>
                           <TableCell className="text-center font-bold">
                             <StatValue
-                              value={gameData.myStats.average}
+                              value={gameData.home.hostStats.average}
                               statType="average"
                               format="decimal"
                             />
                           </TableCell>
                           <TableCell className="text-center font-bold">
                             <StatValue
-                              value={gameData.friendStats.average}
+                              value={gameData.home.teammateStats.average}
                               statType="average"
                               format="decimal"
                             />
                           </TableCell>
                           <TableCell className="text-center">
                             {getComparisonIcon(
-                              gameData.myStats.average,
-                              gameData.friendStats.average
+                              gameData.home.hostStats.average,
+                              gameData.home.teammateStats.average
                             )}
                           </TableCell>
                         </TableRow>
@@ -704,22 +633,22 @@ export default function GameDetailPage() {
                           <TableCell>출루율 (OBP)</TableCell>
                           <TableCell className="text-center font-bold">
                             <StatValue
-                              value={gameData.myStats.obp}
+                              value={gameData.home.hostStats.obp}
                               statType="obp"
                               format="decimal"
                             />
                           </TableCell>
                           <TableCell className="text-center font-bold">
                             <StatValue
-                              value={gameData.friendStats.obp}
+                              value={gameData.home.teammateStats.obp}
                               statType="obp"
                               format="decimal"
                             />
                           </TableCell>
                           <TableCell className="text-center">
                             {getComparisonIcon(
-                              gameData.myStats.obp,
-                              gameData.friendStats.obp
+                              gameData.home.hostStats.obp,
+                              gameData.home.teammateStats.obp
                             )}
                           </TableCell>
                         </TableRow>
@@ -727,22 +656,22 @@ export default function GameDetailPage() {
                           <TableCell>장타율 (SLG)</TableCell>
                           <TableCell className="text-center font-bold">
                             <StatValue
-                              value={gameData.myStats.slg}
+                              value={gameData.home.hostStats.slg}
                               statType="slg"
                               format="decimal"
                             />
                           </TableCell>
                           <TableCell className="text-center font-bold">
                             <StatValue
-                              value={gameData.friendStats.slg}
+                              value={gameData.home.teammateStats.slg}
                               statType="slg"
                               format="decimal"
                             />
                           </TableCell>
                           <TableCell className="text-center">
                             {getComparisonIcon(
-                              gameData.myStats.slg,
-                              gameData.friendStats.slg
+                              gameData.home.hostStats.slg,
+                              gameData.home.teammateStats.slg
                             )}
                           </TableCell>
                         </TableRow>
@@ -750,22 +679,22 @@ export default function GameDetailPage() {
                           <TableCell>OPS</TableCell>
                           <TableCell className="text-center font-bold">
                             <StatValue
-                              value={gameData.myStats.ops}
+                              value={gameData.home.hostStats.ops}
                               statType="ops"
                               format="decimal"
                             />
                           </TableCell>
                           <TableCell className="text-center font-bold">
                             <StatValue
-                              value={gameData.friendStats.ops}
+                              value={gameData.home.teammateStats.ops}
                               statType="ops"
                               format="decimal"
                             />
                           </TableCell>
                           <TableCell className="text-center">
                             {getComparisonIcon(
-                              gameData.myStats.ops,
-                              gameData.friendStats.ops
+                              gameData.home.hostStats.ops,
+                              gameData.home.teammateStats.ops
                             )}
                           </TableCell>
                         </TableRow>
@@ -773,22 +702,22 @@ export default function GameDetailPage() {
                           <TableCell>득점권 타율</TableCell>
                           <TableCell className="text-center font-bold">
                             <StatValue
-                              value={gameData.myStats.rispAverage}
+                              value={gameData.home.hostStats.rispAverage}
                               statType="rispAverage"
                               format="decimal"
                             />
                           </TableCell>
                           <TableCell className="text-center font-bold">
                             <StatValue
-                              value={gameData.friendStats.rispAverage}
+                              value={gameData.home.teammateStats.rispAverage}
                               statType="rispAverage"
                               format="decimal"
                             />
                           </TableCell>
                           <TableCell className="text-center">
                             {getComparisonIcon(
-                              gameData.myStats.rispAverage,
-                              gameData.friendStats.rispAverage
+                              gameData.home.hostStats.rispAverage,
+                              gameData.home.teammateStats.rispAverage
                             )}
                           </TableCell>
                         </TableRow>
@@ -809,24 +738,24 @@ export default function GameDetailPage() {
                 <CardContent>
                   <ComparisonChart
                     myStats={{
-                      battingAverage: gameData.myStats.average,
-                      onBasePercentage: gameData.myStats.obp,
-                      sluggingPercentage: gameData.myStats.slg,
-                      ops: gameData.myStats.ops,
-                      rbiAverage: gameData.myStats.rispAverage,
+                      battingAverage: gameData.home.hostStats.average,
+                      onBasePercentage: gameData.home.hostStats.obp,
+                      sluggingPercentage: gameData.home.hostStats.slg,
+                      ops: gameData.home.hostStats.ops,
+                      rbiAverage: gameData.home.hostStats.rispAverage,
                       strikeoutRate:
-                        (gameData.myStats.strikeouts / myPlateAppearances) *
+                        (gameData.home.hostStats.strikeouts / hostPlateAppearances) *
                         100,
                     }}
                     teammateStats={{
-                      battingAverage: gameData.friendStats.average,
-                      onBasePercentage: gameData.friendStats.obp,
-                      sluggingPercentage: gameData.friendStats.slg,
-                      ops: gameData.friendStats.ops,
-                      rbiAverage: gameData.friendStats.rispAverage,
+                      battingAverage: gameData.home.teammateStats.average,
+                      onBasePercentage: gameData.home.teammateStats.obp,
+                      sluggingPercentage: gameData.home.teammateStats.slg,
+                      ops: gameData.home.teammateStats.ops,
+                      rbiAverage: gameData.home.teammateStats.rispAverage,
                       strikeoutRate:
-                        (gameData.friendStats.strikeouts /
-                          friendPlateAppearances) *
+                        (gameData.home.teammateStats.strikeouts /
+                          teammatePlateAppearances) *
                         100,
                     }}
                   />
@@ -859,30 +788,30 @@ export default function GameDetailPage() {
                         <TableRow className="border-border">
                           <TableCell>득점권 타석</TableCell>
                           <TableCell className="text-center font-bold">
-                            {myRispAtBats.length}
+                            {hostRispAtBats.length}
                           </TableCell>
                           <TableCell className="text-center font-bold">
-                            {friendRispAtBats.length}
+                            {teammateRispAtBats.length}
                           </TableCell>
                           <TableCell className="text-center">
                             {getComparisonIcon(
-                              myRispAtBats.length,
-                              friendRispAtBats.length
+                              hostRispAtBats.length,
+                              teammateRispAtBats.length
                             )}
                           </TableCell>
                         </TableRow>
                         <TableRow className="border-border">
                           <TableCell>득점권 안타</TableCell>
                           <TableCell className="text-center font-bold">
-                            {myRispHits.length}
+                            {hostRispHits.length}
                           </TableCell>
                           <TableCell className="text-center font-bold">
-                            {friendRispHits.length}
+                            {teammateRispHits.length}
                           </TableCell>
                           <TableCell className="text-center">
                             {getComparisonIcon(
-                              myRispHits.length,
-                              friendRispHits.length
+                              hostRispHits.length,
+                              teammateRispHits.length
                             )}
                           </TableCell>
                         </TableRow>
@@ -891,8 +820,8 @@ export default function GameDetailPage() {
                           <TableCell className="text-center font-bold">
                             <StatValue
                               value={
-                                myRispAtBats.length > 0
-                                  ? myRispHits.length / myRispAtBats.length
+                                hostRispAtBats.length > 0
+                                  ? hostRispHits.length / hostRispAtBats.length
                                   : 0
                               }
                               statType="average"
@@ -902,9 +831,9 @@ export default function GameDetailPage() {
                           <TableCell className="text-center font-bold">
                             <StatValue
                               value={
-                                friendRispAtBats.length > 0
-                                  ? friendRispHits.length /
-                                    friendRispAtBats.length
+                                teammateRispAtBats.length > 0
+                                  ? teammateRispHits.length /
+                                    teammateRispAtBats.length
                                   : 0
                               }
                               statType="average"
@@ -913,12 +842,12 @@ export default function GameDetailPage() {
                           </TableCell>
                           <TableCell className="text-center">
                             {getComparisonIcon(
-                              myRispAtBats.length > 0
-                                ? myRispHits.length / myRispAtBats.length
+                              hostRispAtBats.length > 0
+                                ? hostRispHits.length / hostRispAtBats.length
                                 : 0,
-                              friendRispAtBats.length > 0
-                                ? friendRispHits.length /
-                                    friendRispAtBats.length
+                              teammateRispAtBats.length > 0
+                                ? teammateRispHits.length /
+                                    teammateRispAtBats.length
                                 : 0
                             )}
                           </TableCell>
@@ -950,7 +879,7 @@ export default function GameDetailPage() {
                       <div className="grid grid-cols-2 gap-4">
                         <div className="text-center p-3 bg-teal-50/50 dark:bg-teal-950/20 rounded">
                           <div className="text-lg font-bold text-teal-600 dark:text-teal-400">
-                            {myClutchAtBats.length}
+                            {hostClutchAtBats.length}
                           </div>
                           <div className="text-xs text-muted-foreground">
                             나의 클러치 타석
@@ -960,10 +889,10 @@ export default function GameDetailPage() {
                           </div>
                           <div className="text-xs text-muted-foreground">
                             성공률:{" "}
-                            {myClutchAtBats.length > 0
+                            {hostClutchAtBats.length > 0
                               ? (
                                   (myClutchSuccess.length /
-                                    myClutchAtBats.length) *
+                                    hostClutchAtBats.length) *
                                   100
                                 ).toFixed(1)
                               : "0"}
@@ -973,7 +902,7 @@ export default function GameDetailPage() {
 
                         <div className="text-center p-3 bg-rose-50/50 dark:bg-rose-950/20 rounded">
                           <div className="text-lg font-bold text-rose-600 dark:text-rose-400">
-                            {friendClutchAtBats.length}
+                            {teammateClutchAtBats.length}
                           </div>
                           <div className="text-xs text-muted-foreground">
                             팀원 클러치 타석
@@ -983,10 +912,10 @@ export default function GameDetailPage() {
                           </div>
                           <div className="text-xs text-muted-foreground">
                             성공률:{" "}
-                            {friendClutchAtBats.length > 0
+                            {teammateClutchAtBats.length > 0
                               ? (
                                   (friendClutchSuccess.length /
-                                    friendClutchAtBats.length) *
+                                    teammateClutchAtBats.length) *
                                   100
                                 ).toFixed(1)
                               : "0"}
@@ -1004,7 +933,7 @@ export default function GameDetailPage() {
                   {/* 득점 요약 및 분석 */}
                   <ScoringSummary
                     plays={scoringPlays}
-                    allAtBats={gameData.atBatDetails}
+                    allAtBats={gameData.home.ownership.totalAtBats}
                   />
 
                   {/* 개별 득점 상황 */}
@@ -1057,7 +986,7 @@ export default function GameDetailPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {gameData.atBatDetails.map((atBat, index) => (
+                    {gameData.home.ownership.totalAtBats.map((atBat, index) => (
                       <div
                         key={index}
                         className={`p-4 rounded-lg border ${
@@ -1089,7 +1018,7 @@ export default function GameDetailPage() {
                             </Badge>
 
                             {/* 득점권 상황 */}
-                            {isRunnerInScoringPosition(atBat.runnersBefore) && (
+                            {isRunnerInScoringPosition(atBat.runnersBefore ?? {}) && (
                               <Badge
                                 variant="secondary"
                                 className="text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
@@ -1099,7 +1028,7 @@ export default function GameDetailPage() {
                             )}
 
                             {/* 클러치 상황 */}
-                            {isRunnerInScoringPosition(atBat.runnersBefore) &&
+                            {isRunnerInScoringPosition(atBat.runnersBefore ?? {}) &&
                               atBat.outsBefore === 2 && (
                                 <Badge
                                   variant="secondary"
@@ -1111,9 +1040,9 @@ export default function GameDetailPage() {
                           </div>
                           <div className="text-right">
                             <div className="font-medium capitalize">
-                              {atBat.result.replace("_", " ")}
+                              {atBat.result?.replace("_", " ")}
                             </div>
-                            {atBat.rbi > 0 && (
+                            {atBat.rbi && atBat.rbi > 0 && (
                               <div className="text-sm text-green-600 dark:text-green-400">
                                 {atBat.rbi} RBI
                               </div>
@@ -1122,12 +1051,12 @@ export default function GameDetailPage() {
                         </div>
 
                         {/* 주자 상황 표시 */}
-                        {Object.keys(atBat.runnersBefore).length > 0 && (
+                        {Object.keys(atBat.runnersBefore ?? {}).length > 0 && (
                           <div className="mb-2 p-2 bg-muted/30 rounded text-xs">
                             <span className="text-muted-foreground">
                               주자 상황:{" "}
                             </span>
-                            {Object.entries(atBat.runnersBefore).map(
+                            {Object.entries(atBat.runnersBefore ?? {}).map(
                               ([player, base]) => (
                                 <span key={player} className="mr-2">
                                   {base}루 {player}

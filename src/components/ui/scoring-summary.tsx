@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
 import { BaseballDiamond, BaseRunners } from "./baseball-diamond";
+import { AtBatEvent } from "@/hooks/useGameAnalysis";
 
 export interface ScoringPlayData {
   id: string;
@@ -14,22 +15,22 @@ export interface ScoringPlayData {
   description: string;
 }
 
-interface AtBatDetail {
-  batter: string;
-  inning: number;
-  isTopInning: boolean;
-  log: string[];
-  result: string;
-  rbi: number;
-  risp: boolean;
-  runnersBefore: { [key: string]: number };
-  outsBefore: number;
-  owner: "my" | "friend";
-}
+// interface AtBatDetail {
+//   batter: string;
+//   inning: number;
+//   isTopInning: boolean;
+//   log: string[];
+//   result: string;
+//   rbi: number;
+//   risp: boolean;
+//   runnersBefore: { [key: string]: number };
+//   outsBefore: number;
+//   owner: "my" | "friend";
+// }
 
 interface ScoringSummaryProps {
   plays: ScoringPlayData[];
-  allAtBats?: AtBatDetail[]; // 전체 타석 데이터 추가
+  allAtBats?: AtBatEvent[]; // 전체 타석 데이터 추가
   className?: string;
 }
 
@@ -46,54 +47,54 @@ export function ScoringSummary({
   const hasRunner = (runner: boolean | string | undefined) => Boolean(runner);
 
   // 전체 타석에서 주자 상황별 통계 계산
-  const calculateRunnerSituations = (atBats: AtBatDetail[]) => {
+  const calculateRunnerSituations = (atBats: AtBatEvent[]) => {
     return {
       empty: atBats.filter(
         (ab) =>
-          Object.keys(ab.runnersBefore).length === 0 ||
-          Object.values(ab.runnersBefore).every((base) => !base)
+          Object.keys(ab.runnersBefore ?? {}).length === 0 ||
+          Object.values(ab.runnersBefore ?? {}).every((base) => !base)
       ).length,
       risp: atBats.filter((ab) =>
-        Object.values(ab.runnersBefore).some((base) => base && base >= 2)
+        Object.values(ab.runnersBefore ?? {}).some((base) => base && base >= 2)
       ).length,
       loaded: atBats.filter((ab) => {
-        const runners = Object.values(ab.runnersBefore);
+        const runners = Object.values(ab.runnersBefore ?? {});
         return (
           runners.includes(1) && runners.includes(2) && runners.includes(3)
         );
       }).length,
       first: atBats.filter((ab) => {
-        const runners = Object.values(ab.runnersBefore);
+        const runners = Object.values(ab.runnersBefore ?? {});
         return (
           runners.includes(1) && !runners.includes(2) && !runners.includes(3)
         );
       }).length,
       second: atBats.filter((ab) => {
-        const runners = Object.values(ab.runnersBefore);
+        const runners = Object.values(ab.runnersBefore ?? {});
         return (
           !runners.includes(1) && runners.includes(2) && !runners.includes(3)
         );
       }).length,
       third: atBats.filter((ab) => {
-        const runners = Object.values(ab.runnersBefore);
+        const runners = Object.values(ab.runnersBefore ?? {});
         return (
           !runners.includes(1) && !runners.includes(2) && runners.includes(3)
         );
       }).length,
       firstSecond: atBats.filter((ab) => {
-        const runners = Object.values(ab.runnersBefore);
+        const runners = Object.values(ab.runnersBefore ?? {});
         return (
           runners.includes(1) && runners.includes(2) && !runners.includes(3)
         );
       }).length,
       firstThird: atBats.filter((ab) => {
-        const runners = Object.values(ab.runnersBefore);
+        const runners = Object.values(ab.runnersBefore ?? {});
         return (
           runners.includes(1) && !runners.includes(2) && runners.includes(3)
         );
       }).length,
       secondThird: atBats.filter((ab) => {
-        const runners = Object.values(ab.runnersBefore);
+        const runners = Object.values(ab.runnersBefore ?? {});
         return (
           !runners.includes(1) && runners.includes(2) && runners.includes(3)
         );

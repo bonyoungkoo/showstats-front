@@ -73,7 +73,7 @@ export default function UserProfile({
     const fetchUserData = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/users/${username}`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${username}`);
 
         if (!response.ok) {
           console.error("User API 호출 실패:", response.status);

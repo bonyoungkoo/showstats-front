@@ -37,7 +37,7 @@ async function fetchUserGames(username: string): Promise<UserGamesResponse> {
   const params = new URLSearchParams();
   params.set("username", username);
 
-  const response = await fetch(`/api/games/history?${params.toString()}`, {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/games/history?${params.toString()}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
