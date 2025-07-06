@@ -18,25 +18,19 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useParams, useSearchParams } from "next/navigation";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import Image from "next/image";
-import { StatValue } from "@/components/ui/stat-value";
 import { StatLegend } from "@/components/ui/stat-legend";
 import { ComparisonChart } from "@/components/ui/comparison-chart";
-import {
-  ScoringSummary,
-  ScoringPlayData,
-} from "@/components/ui/scoring-summary";
-import { ScoringPlayCard } from "@/components/ui/baseball-diamond";
-import { parseWeatherWithTemperature } from "@/lib/weather-utils";
+import { getStatColor } from "@/lib/stat-colors";
 import { useGameAnalysis } from "@/hooks/useGameAnalysis";
+import { parseWeatherWithTemperature } from "@/lib/weather-utils";
+import { ScoringSummary } from "@/components/ui/scoring-summary";
 
 export default function GameDetailPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const gameId = params.id as string;
   const username = searchParams.get("username") || "sunken_kim";
-  const teamName = searchParams.get("teamName");
 
   // TanStack Query 사용
   const {
@@ -44,14 +38,6 @@ export default function GameDetailPage() {
     isLoading: loading,
     error,
   } = useGameAnalysis(username, gameId);
-
-  const getComparisonIcon = (myValue: number, teammateValue: number) => {
-    if (myValue > teammateValue)
-      return <TrendingUp className="w-4 h-4 text-green-400" />;
-    else if (myValue < teammateValue)
-      return <TrendingDown className="w-4 h-4 text-red-400" />;
-    else return <Minus className="w-4 h-4 text-muted-foreground" />;
-  };
 
   // 로딩 상태
   if (loading) {
@@ -90,10 +76,6 @@ export default function GameDetailPage() {
     );
   }
 
-  // 타석 수 계산 (plateAppearances)
-  const hostPlateAppearances = gameData.home.hostStats.atBats + gameData.home.hostStats.walks
-  const teammatePlateAppearances = gameData.home.teammateStats.atBats + gameData.home.teammateStats.walks
-
   // 득점권 상황 판별 함수
   const isRunnerInScoringPosition = (runnersBefore: Record<string, number>) => {
     // 2루 또는 3루에 주자가 있으면 득점권
@@ -104,84 +86,46 @@ export default function GameDetailPage() {
     );
   };
 
-  // 득점 상황 데이터 변환 (RBI가 있는 타석만)
-  const scoringPlays: ScoringPlayData[] = gameData.home.ownership.totalAtBats
-    .filter((atBat) => atBat.rbi && atBat.rbi > 0)
-    .map((atBat, index) => ({
-      id: `scoring-${index}`,
-      inning: atBat.inning,
-      inningHalf: atBat.isTopInning ? "top" : "bottom",
-      outs: atBat.outsBefore || 0,
-      runners: {
-        first:
-          atBat.runnersBefore && 
-          (atBat.runnersBefore["1"] ||
-          Object.values(atBat.runnersBefore).find((base) => base === 1))
-            ? "주자"
-            : false,
-        second:
-          atBat.runnersBefore &&
-          (atBat.runnersBefore["2"] ||
-          Object.values(atBat.runnersBefore).find((base) => base === 2))
-            ? "주자"
-            : false,
-        third:
-          atBat.runnersBefore &&
-          (atBat.runnersBefore["3"] ||
-          Object.values(atBat.runnersBefore).find((base) => base === 3))
-            ? "주자"
-            : false,
-      },
-      batter: atBat.batter,
-      batterOwner: atBat.isHost ? "호스트" : "팀원",
-      result: atBat.result?.replace("_", " ") ?? "",
-      runsScored: atBat.rbi ?? 0,
-      description: atBat.log.join(" "),
-    }));
-
-  // 득점권 상황 분석
-  const rispSituations = gameData.home.ownership.totalAtBats.filter((atBat) =>
-    isRunnerInScoringPosition(atBat.runnersBefore ?? {})
-  );  
-
-  const hostRispAtBats = rispSituations.filter((atBat) => atBat.owner === "my");
-  const teammateRispAtBats = rispSituations.filter(
-    (atBat) => atBat.owner === "friend"
+  // 홈팀 클러치 타석/성공
+  const homeHostClutchAtBats = gameData.home.ownership.hostAtBats.filter(
+    (atBat) => isRunnerInScoringPosition(atBat.runnersBefore ?? {}) && atBat.outsBefore === 2
+  );
+  const homeTeammateClutchAtBats = gameData.home.ownership.teammateAtBats.filter(
+    (atBat) => isRunnerInScoringPosition(atBat.runnersBefore ?? {}) && atBat.outsBefore === 2
+  );
+  const awayHostClutchAtBats = gameData.away.ownership.hostAtBats.filter(
+    (atBat) => isRunnerInScoringPosition(atBat.runnersBefore ?? {}) && atBat.outsBefore === 2
+  );
+  const awayTeammateClutchAtBats = gameData.away.ownership.teammateAtBats.filter(
+    (atBat) => isRunnerInScoringPosition(atBat.runnersBefore ?? {}) && atBat.outsBefore === 2
   );
 
-  const hostRispHits = hostRispAtBats.filter(
-    (atBat) =>
-      atBat.result?.includes("single") ||
-      atBat.result?.includes("double") ||
-      atBat.result?.includes("triple") ||
-      atBat.result?.includes("home_run")
-  );
-
-  const teammateRispHits = teammateRispAtBats.filter(
-    (atBat) =>
-      atBat.result?.includes("single") ||
-      atBat.result?.includes("double") ||
-      atBat.result?.includes("triple") ||
-      atBat.result?.includes("home_run")
-  );
-
-  // 클러치 상황 분석 (득점권 + 2아웃)
-  const clutchSituations = gameData.home.ownership.totalAtBats.filter(
-    (atBat) =>
-      isRunnerInScoringPosition(atBat.runnersBefore ?? {}) && atBat.outsBefore === 2
-  );
-
-  const hostClutchAtBats = clutchSituations.filter(
-    (atBat) => atBat.isHost
-  );
-  const teammateClutchAtBats = clutchSituations.filter(
-    (atBat) => !atBat.isHost
-  );
-
-  const myClutchSuccess = hostClutchAtBats.filter((atBat) => (atBat.rbi ?? 0) > 0);
-  const friendClutchSuccess = teammateClutchAtBats.filter(
-    (atBat) => (atBat.rbi ?? 0) > 0
-  );
+  const clutchRows = [
+    {
+      label: `${gameData.lineScore.home_full_name} 호스트`,
+      color: "bg-blue-500",
+      clutch: homeHostClutchAtBats.length,
+      success: homeHostClutchAtBats.filter((atBat) => (atBat.rbi ?? 0) > 0).length,
+    },
+    {
+      label: `${gameData.lineScore.home_full_name} 팀원`,
+      color: "bg-blue-300",
+      clutch: homeTeammateClutchAtBats.length,
+      success: homeTeammateClutchAtBats.filter((atBat) => (atBat.rbi ?? 0) > 0).length,
+    },
+    {
+      label: `${gameData.lineScore.away_full_name} 호스트`,
+      color: "bg-red-500",
+      clutch: awayHostClutchAtBats.length,
+      success: awayHostClutchAtBats.filter((atBat) => (atBat.rbi ?? 0) > 0).length,
+    },
+    {
+      label: `${gameData.lineScore.away_full_name} 팀원`,
+      color: "bg-red-300",
+      clutch: awayTeammateClutchAtBats.length,
+      success: awayTeammateClutchAtBats.filter((atBat) => (atBat.rbi ?? 0) > 0).length,
+    },
+  ];
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
@@ -197,22 +141,18 @@ export default function GameDetailPage() {
             <div className="flex items-center justify-between mb-6">
               <div className="flex-1 text-center">
                 <h2 className="text-2xl md:text-3xl font-bold mb-2">
-                  {teamName || "내 팀"}
+                  {gameData.lineScore.away_full_name}
                 </h2>
                 <div className="flex items-center justify-center gap-2">
                   <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center overflow-hidden">
-                    {gameData.homeTeamLogo ? (
-                      <Image
-                        src={gameData.awayTeamLogo ?? ""}
-                        alt={gameData.lineScore.away_full_name || "어웨이팀"}
-                        width={48}
-                        height={48}
-                        className="rounded-full object-cover"
-                        onError={() => console.log("홈팀 로고 로드 실패")}
-                      />
-                    ) : (
-                      <span className="text-white text-2xl">⚾</span>
-                    )}
+                    <Image
+                      src={gameData.awayTeamLogo ?? ""}
+                      alt={gameData.lineScore.away_full_name || "어웨이팀"}
+                      width={48}
+                      height={48}
+                      className="rounded-full object-cover"
+                      onError={() => console.log("홈팀 로고 로드 실패")}
+                    />
                   </div>
                 </div>
               </div>
@@ -374,34 +314,48 @@ export default function GameDetailPage() {
       )}
 
       {/* 게임 요약 */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* 홈팀 카드 */}
         <Card className="border-border">
+          <CardHeader>
+            <CardTitle className="text-blue-500">{gameData.lineScore.home_full_name} (홈)</CardTitle>
+          </CardHeader>
           <CardContent>
-            <div className="text-center">
-              <div className="text-2xl font-bold showstats-highlight">
-                {gameData.validation.home.actualHits}
+            <div className="flex flex-row justify-around items-center gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold showstats-highlight">{gameData.lineScore.home_hits}</div>
+                <p className="text-sm text-muted-foreground">총 안타</p>
               </div>
-              <p className="text-sm text-muted-foreground">총 안타</p>
+              <div className="text-center">
+                <div className="text-2xl font-bold showstats-highlight">{gameData.lineScore.home_runs}</div>
+                <p className="text-sm text-muted-foreground">총 득점</p>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold showstats-highlight">{gameData.home.totalStats.atBats + gameData.home.totalStats.walks}</div>
+                <p className="text-sm text-muted-foreground">총 타석</p>
+              </div>
             </div>
           </CardContent>
         </Card>
+        {/* 어웨이팀 카드 */}
         <Card className="border-border">
+          <CardHeader>
+            <CardTitle className="text-red-500">{gameData.lineScore.away_full_name} (어웨이)</CardTitle>
+          </CardHeader>
           <CardContent>
-            <div className="text-center">
-              <div className="text-2xl font-bold showstats-highlight">
-                {gameData.validation.home.actualRuns}
+            <div className="flex flex-row justify-around items-center gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold showstats-highlight">{gameData.lineScore.away_hits}</div>
+                <p className="text-sm text-muted-foreground">총 안타</p>
               </div>
-              <p className="text-sm text-muted-foreground">총 득점</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border">
-          <CardContent>
-            <div className="text-center">
-              <div className="text-2xl font-bold showstats-highlight">
-                {gameData.home.ownership.totalAtBats.length}
+              <div className="text-center">
+                <div className="text-2xl font-bold showstats-highlight">{gameData.lineScore.away_runs}</div>
+                <p className="text-sm text-muted-foreground">총 득점</p>
               </div>
-              <p className="text-sm text-muted-foreground">총 타석</p>
+              <div className="text-center">
+                <div className="text-2xl font-bold showstats-highlight">{gameData.away.totalStats.atBats + gameData.away.totalStats.walks}</div>
+                <p className="text-sm text-muted-foreground">총 타석</p>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -502,89 +456,118 @@ export default function GameDetailPage() {
                   <CardContent>
                     <Table>
                       <TableHeader>
-                        <TableRow className="border-border">
-                          <TableHead>항목</TableHead>
-                          <TableHead className="text-center">호스트</TableHead>
-                          <TableHead className="text-center">팀원</TableHead>
-                          <TableHead className="text-center">비교</TableHead>
+                        <TableRow>
+                          <TableHead className="w-32">항목</TableHead>
+                          <TableHead className="text-center w-32" colSpan={2}>
+                            <div className="flex flex-col items-center">
+                              <span className="font-bold text-xs text-white mb-1 flex items-center justify-center">
+                                {gameData.lineScore.home_full_name}
+                                {gameData.homeTeamLogo && (
+                                  <img src={gameData.homeTeamLogo} alt="홈팀로고" width={18} height={18} className="inline-block rounded-full ml-1 align-middle" />
+                                )}
+                              </span>
+                            </div>
+                          </TableHead>
+                          <TableHead className="text-center w-32" colSpan={2}>
+                            <div className="flex flex-col items-center">
+                              <span className="font-bold text-xs text-white mb-1 flex items-center justify-center">
+                                {gameData.lineScore.away_full_name}
+                                {gameData.awayTeamLogo && (
+                                  <img src={gameData.awayTeamLogo} alt="어웨이팀로고" width={18} height={18} className="inline-block rounded-full ml-1 align-middle" />
+                                )}
+                              </span>
+                            </div>
+                          </TableHead>
+                        </TableRow>
+                        <TableRow>
+                          <TableHead className="w-32">항목</TableHead>
+                          <TableHead className="text-center w-32">
+                            <span className="px-1.5 py-0.5 rounded bg-red-400 text-white text-[10px] font-bold mr-1">홈팀</span>
+                            호스트
+                          </TableHead>
+                          <TableHead className="text-center w-32">
+                            <span className="px-1.5 py-0.5 rounded bg-red-400 text-white text-[10px] font-bold mr-1">홈팀</span>
+                            팀원
+                          </TableHead>
+                          <TableHead className="text-center w-32">
+                            <span className="px-1.5 py-0.5 rounded bg-blue-400 text-white text-[10px] font-bold mr-1">어웨이팀</span>
+                            호스트
+                          </TableHead>
+                          <TableHead className="text-center w-32">
+                            <span className="px-1.5 py-0.5 rounded bg-blue-400 text-white text-[10px] font-bold mr-1">어웨이팀</span>
+                            팀원
+                          </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        <TableRow className="border-border">
-                          <TableCell>타석 (PA)</TableCell>
-                          <TableCell className="text-center font-bold">
-                            {hostPlateAppearances}
-                          </TableCell>
-                          <TableCell className="text-center font-bold">
-                            {teammatePlateAppearances}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {getComparisonIcon(
-                              hostPlateAppearances,
-                              teammatePlateAppearances
-                            )}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow className="border-border">
-                          <TableCell>타수 (AB)</TableCell>
-                          <TableCell className="text-center font-bold">
-                            {gameData.home.hostStats.atBats}
-                          </TableCell>
-                          <TableCell className="text-center font-bold">
-                            {gameData.home.teammateStats.atBats}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {getComparisonIcon(
-                              gameData.home.hostStats.atBats,
-                              gameData.home.teammateStats.atBats
-                            )}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow className="border-border">
-                          <TableCell>안타 (H)</TableCell>
-                          <TableCell className="text-center font-bold">
-                            {gameData.home.hostStats.hits}
-                          </TableCell>
-                          <TableCell className="text-center font-bold">
-                            {gameData.home.teammateStats.hits}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {getComparisonIcon(
-                              gameData.home.hostStats.hits,
-                              gameData.home.teammateStats.hits
-                            )}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow className="border-border">
-                          <TableCell>홈런 (HR)</TableCell>
-                          <TableCell className="text-center font-bold">
-                            {gameData.home.hostStats.homeRuns}
-                          </TableCell>
-                          <TableCell className="text-center font-bold">
-                            {gameData.home.teammateStats.homeRuns}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {getComparisonIcon(
-                              gameData.home.hostStats.homeRuns,
-                              gameData.home.teammateStats.homeRuns
-                            )}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow className="border-border">
-                          <TableCell>타점 (RBI)</TableCell>
-                          <TableCell className="text-center font-bold">
-                            {gameData.home.hostStats.rbis}
-                          </TableCell>
-                          <TableCell className="text-center font-bold">
-                            {gameData.home.teammateStats.rbis}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {getComparisonIcon(
-                              gameData.home.hostStats.rbis,
-                              gameData.home.teammateStats.rbis
-                            )}
-                          </TableCell>
-                        </TableRow>
+                        {(() => {
+                          const rows = [
+                            {
+                              label: "타석 (PA)",
+                              values: [
+                                gameData.home.hostStats.atBats + gameData.home.hostStats.walks,
+                                gameData.home.teammateStats.atBats + gameData.home.teammateStats.walks,
+                                gameData.away.hostStats.atBats + gameData.away.hostStats.walks,
+                                gameData.away.teammateStats.atBats + gameData.away.teammateStats.walks,
+                              ],
+                            },
+                            {
+                              label: "타수 (AB)",
+                              values: [
+                                gameData.home.hostStats.atBats,
+                                gameData.home.teammateStats.atBats,
+                                gameData.away.hostStats.atBats,
+                                gameData.away.teammateStats.atBats,
+                              ],
+                            },
+                            {
+                              label: "안타 (H)",
+                              values: [
+                                gameData.home.hostStats.hits,
+                                gameData.home.teammateStats.hits,
+                                gameData.away.hostStats.hits,
+                                gameData.away.teammateStats.hits,
+                              ],
+                            },
+                            {
+                              label: "홈런 (HR)",
+                              values: [
+                                gameData.home.hostStats.homeRuns,
+                                gameData.home.teammateStats.homeRuns,
+                                gameData.away.hostStats.homeRuns,
+                                gameData.away.teammateStats.homeRuns,
+                              ],
+                            },
+                            {
+                              label: "타점 (RBI)",
+                              values: [
+                                gameData.home.hostStats.rbis,
+                                gameData.home.teammateStats.rbis,
+                                gameData.away.hostStats.rbis,
+                                gameData.away.teammateStats.rbis,
+                              ],
+                            },
+                          ];
+                          return rows.map((row, i) => {
+                            const max = Math.max(...row.values);
+                            return (
+                              <TableRow key={i} className="border-border">
+                                <TableCell className="w-32">{row.label}</TableCell>
+                                {row.values.map((v, idx) => (
+                                  <TableCell
+                                    key={idx}
+                                    className={`text-center font-bold w-32`}
+                                  >
+                                    {v === max && row.values.filter(x => x === max).length === 1 ? (
+                                      <span className="inline-block mr-1 text-yellow-400" title="최고 기록">⭐</span>
+                                    ) : null}
+                                    {v}
+                                  </TableCell>
+                                ))}
+                              </TableRow>
+                            );
+                          });
+                        })()}
                       </TableBody>
                     </Table>
                   </CardContent>
@@ -598,129 +581,126 @@ export default function GameDetailPage() {
                   <CardContent>
                     <Table>
                       <TableHeader>
-                        <TableRow className="border-border">
-                          <TableHead>항목</TableHead>
-                          <TableHead className="text-center">호스트</TableHead>
-                          <TableHead className="text-center">팀원</TableHead>
-                          <TableHead className="text-center">비교</TableHead>
+                        <TableRow>
+                          <TableHead className="w-32">항목</TableHead>
+                          <TableHead className="text-center w-32" colSpan={2}>
+                            <div className="flex flex-col items-center">
+                              <span className="font-bold text-xs text-white mb-1 flex items-center justify-center">
+                                {gameData.lineScore.home_full_name}
+                                {gameData.homeTeamLogo && (
+                                  <img src={gameData.homeTeamLogo} alt="홈팀로고" width={18} height={18} className="inline-block rounded-full ml-1 align-middle" />
+                                )}
+                              </span>
+                            </div>
+                          </TableHead>
+                          <TableHead className="text-center w-32" colSpan={2}>
+                            <div className="flex flex-col items-center">
+                              <span className="font-bold text-xs text-white mb-1 flex items-center justify-center">
+                                {gameData.lineScore.away_full_name}
+                                {gameData.awayTeamLogo && (
+                                  <img src={gameData.awayTeamLogo} alt="어웨이팀로고" width={18} height={18} className="inline-block rounded-full ml-1 align-middle" />
+                                )}
+                              </span>
+                            </div>
+                          </TableHead>
+                        </TableRow>
+                        <TableRow>
+                          <TableHead className="w-32">항목</TableHead>
+                          <TableHead className="text-center w-32">
+                            <span className="px-1.5 py-0.5 rounded bg-red-400 text-white text-[10px] font-bold mr-1">홈팀</span>
+                            호스트
+                          </TableHead>
+                          <TableHead className="text-center w-32">
+                            <span className="px-1.5 py-0.5 rounded bg-red-400 text-white text-[10px] font-bold mr-1">홈팀</span>
+                            팀원
+                          </TableHead>
+                          <TableHead className="text-center w-32">
+                            <span className="px-1.5 py-0.5 rounded bg-blue-400 text-white text-[10px] font-bold mr-1">어웨이팀</span>
+                            호스트
+                          </TableHead>
+                          <TableHead className="text-center w-32">
+                            <span className="px-1.5 py-0.5 rounded bg-blue-400 text-white text-[10px] font-bold mr-1">어웨이팀</span>
+                            팀원
+                          </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        <TableRow className="border-border">
-                          <TableCell>타율 (AVG)</TableCell>
-                          <TableCell className="text-center font-bold">
-                            <StatValue
-                              value={gameData.home.hostStats.average}
-                              statType="average"
-                              format="decimal"
-                            />
-                          </TableCell>
-                          <TableCell className="text-center font-bold">
-                            <StatValue
-                              value={gameData.home.teammateStats.average}
-                              statType="average"
-                              format="decimal"
-                            />
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {getComparisonIcon(
-                              gameData.home.hostStats.average,
-                              gameData.home.teammateStats.average
-                            )}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow className="border-border">
-                          <TableCell>출루율 (OBP)</TableCell>
-                          <TableCell className="text-center font-bold">
-                            <StatValue
-                              value={gameData.home.hostStats.obp}
-                              statType="obp"
-                              format="decimal"
-                            />
-                          </TableCell>
-                          <TableCell className="text-center font-bold">
-                            <StatValue
-                              value={gameData.home.teammateStats.obp}
-                              statType="obp"
-                              format="decimal"
-                            />
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {getComparisonIcon(
-                              gameData.home.hostStats.obp,
-                              gameData.home.teammateStats.obp
-                            )}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow className="border-border">
-                          <TableCell>장타율 (SLG)</TableCell>
-                          <TableCell className="text-center font-bold">
-                            <StatValue
-                              value={gameData.home.hostStats.slg}
-                              statType="slg"
-                              format="decimal"
-                            />
-                          </TableCell>
-                          <TableCell className="text-center font-bold">
-                            <StatValue
-                              value={gameData.home.teammateStats.slg}
-                              statType="slg"
-                              format="decimal"
-                            />
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {getComparisonIcon(
-                              gameData.home.hostStats.slg,
-                              gameData.home.teammateStats.slg
-                            )}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow className="border-border">
-                          <TableCell>OPS</TableCell>
-                          <TableCell className="text-center font-bold">
-                            <StatValue
-                              value={gameData.home.hostStats.ops}
-                              statType="ops"
-                              format="decimal"
-                            />
-                          </TableCell>
-                          <TableCell className="text-center font-bold">
-                            <StatValue
-                              value={gameData.home.teammateStats.ops}
-                              statType="ops"
-                              format="decimal"
-                            />
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {getComparisonIcon(
-                              gameData.home.hostStats.ops,
-                              gameData.home.teammateStats.ops
-                            )}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow className="border-border">
-                          <TableCell>득점권 타율</TableCell>
-                          <TableCell className="text-center font-bold">
-                            <StatValue
-                              value={gameData.home.hostStats.rispAverage}
-                              statType="rispAverage"
-                              format="decimal"
-                            />
-                          </TableCell>
-                          <TableCell className="text-center font-bold">
-                            <StatValue
-                              value={gameData.home.teammateStats.rispAverage}
-                              statType="rispAverage"
-                              format="decimal"
-                            />
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {getComparisonIcon(
-                              gameData.home.hostStats.rispAverage,
-                              gameData.home.teammateStats.rispAverage
-                            )}
-                          </TableCell>
-                        </TableRow>
+                        {(() => {
+                          const rows = [
+                            {
+                              label: "타율 (AVG)",
+                              values: [
+                                gameData.home.hostStats.average,
+                                gameData.home.teammateStats.average,
+                                gameData.away.hostStats.average,
+                                gameData.away.teammateStats.average,
+                              ],
+                              statType: "average",
+                            },
+                            {
+                              label: "출루율 (OBP)",
+                              values: [
+                                gameData.home.hostStats.obp,
+                                gameData.home.teammateStats.obp,
+                                gameData.away.hostStats.obp,
+                                gameData.away.teammateStats.obp,
+                              ],
+                              statType: "obp",
+                            },
+                            {
+                              label: "장타율 (SLG)",
+                              values: [
+                                gameData.home.hostStats.slg,
+                                gameData.home.teammateStats.slg,
+                                gameData.away.hostStats.slg,
+                                gameData.away.teammateStats.slg,
+                              ],
+                              statType: "slg",
+                            },
+                            {
+                              label: "OPS",
+                              values: [
+                                gameData.home.hostStats.ops,
+                                gameData.home.teammateStats.ops,
+                                gameData.away.hostStats.ops,
+                                gameData.away.teammateStats.ops,
+                              ],
+                              statType: "ops",
+                            },
+                            {
+                              label: "득점권 타율",
+                              values: [
+                                gameData.home.hostStats.rispAverage,
+                                gameData.home.teammateStats.rispAverage,
+                                gameData.away.hostStats.rispAverage,
+                                gameData.away.teammateStats.rispAverage,
+                              ],
+                              statType: "rispAverage",
+                            },
+                          ];
+                          return rows.map((row, i) => {
+                            const max = Math.max(...row.values);
+                            return (
+                              <TableRow key={i} className="border-border">
+                                <TableCell className="w-32">{row.label}</TableCell>
+                                {row.values.map((v, idx) => {
+                                  const color = getStatColor(v, row.statType).color;
+                                  return (
+                                    <TableCell
+                                      key={idx}
+                                      className={`text-center font-bold w-32 ${color}`}
+                                    >
+                                      {v === max && row.values.filter(x => x === max).length === 1 ? (
+                                        <span className="inline-block mr-1 text-yellow-400" title="최고 기록">⭐</span>
+                                      ) : null}
+                                      {v.toFixed(3)}
+                                    </TableCell>
+                                  );
+                                })}
+                              </TableRow>
+                            );
+                          });
+                        })()}
                       </TableBody>
                     </Table>
                   </CardContent>
@@ -737,27 +717,12 @@ export default function GameDetailPage() {
                 </CardHeader>
                 <CardContent>
                   <ComparisonChart
-                    myStats={{
-                      battingAverage: gameData.home.hostStats.average,
-                      onBasePercentage: gameData.home.hostStats.obp,
-                      sluggingPercentage: gameData.home.hostStats.slg,
-                      ops: gameData.home.hostStats.ops,
-                      rbiAverage: gameData.home.hostStats.rispAverage,
-                      strikeoutRate:
-                        (gameData.home.hostStats.strikeouts / hostPlateAppearances) *
-                        100,
-                    }}
-                    teammateStats={{
-                      battingAverage: gameData.home.teammateStats.average,
-                      onBasePercentage: gameData.home.teammateStats.obp,
-                      sluggingPercentage: gameData.home.teammateStats.slg,
-                      ops: gameData.home.teammateStats.ops,
-                      rbiAverage: gameData.home.teammateStats.rispAverage,
-                      strikeoutRate:
-                        (gameData.home.teammateStats.strikeouts /
-                          teammatePlateAppearances) *
-                        100,
-                    }}
+                    homeStats={gameData.home}
+                    awayStats={gameData.away}
+                    homeTeamName={gameData.lineScore.home_full_name}
+                    awayTeamName={gameData.lineScore.away_full_name}
+                    homeTeamLogo={gameData.homeTeamLogo ? String(gameData.homeTeamLogo) : ''}
+                    awayTeamLogo={gameData.awayTeamLogo ? String(gameData.awayTeamLogo) : ''}
                   />
                 </CardContent>
               </Card>
@@ -765,93 +730,88 @@ export default function GameDetailPage() {
 
             {/* 득점 분석 */}
             <TabsContent value="scoring" className="space-y-6">
-              {/* 득점권 상황 분석 */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* 득점권 타격 분석 */}
                 <Card className="border-border">
                   <CardHeader>
                     <CardTitle className="text-lg">득점권 타격 분석</CardTitle>
-                    <CardDescription>
-                      2루 이상에 주자가 있는 상황에서의 성과
-                    </CardDescription>
+                    <CardDescription>2루 이상에 주자가 있는 상황에서의 성과</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <Table>
                       <TableHeader>
-                        <TableRow className="border-border">
+                        <TableRow>
                           <TableHead>항목</TableHead>
-                          <TableHead className="text-center">나</TableHead>
-                          <TableHead className="text-center">팀원</TableHead>
-                          <TableHead className="text-center">비교</TableHead>
+                          <TableHead className="text-center">
+                            <span className="px-1.5 py-0.5 rounded bg-red-400 text-white text-[10px] font-bold mr-1">홈팀</span>
+                            호스트
+                          </TableHead>
+                          <TableHead className="text-center">
+                            <span className="px-1.5 py-0.5 rounded bg-red-400 text-white text-[10px] font-bold mr-1">홈팀</span>
+                            팀원
+                          </TableHead>
+                          <TableHead className="text-center">
+                            <span className="px-1.5 py-0.5 rounded bg-blue-400 text-white text-[10px] font-bold mr-1">어웨이팀</span>
+                            호스트
+                          </TableHead>
+                          <TableHead className="text-center">
+                            <span className="px-1.5 py-0.5 rounded bg-blue-400 text-white text-[10px] font-bold mr-1">어웨이팀</span>
+                            팀원
+                          </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        <TableRow className="border-border">
-                          <TableCell>득점권 타석</TableCell>
-                          <TableCell className="text-center font-bold">
-                            {hostRispAtBats.length}
-                          </TableCell>
-                          <TableCell className="text-center font-bold">
-                            {teammateRispAtBats.length}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {getComparisonIcon(
-                              hostRispAtBats.length,
-                              teammateRispAtBats.length
-                            )}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow className="border-border">
-                          <TableCell>득점권 안타</TableCell>
-                          <TableCell className="text-center font-bold">
-                            {hostRispHits.length}
-                          </TableCell>
-                          <TableCell className="text-center font-bold">
-                            {teammateRispHits.length}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {getComparisonIcon(
-                              hostRispHits.length,
-                              teammateRispHits.length
-                            )}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow className="border-border">
-                          <TableCell>득점권 타율</TableCell>
-                          <TableCell className="text-center font-bold">
-                            <StatValue
-                              value={
-                                hostRispAtBats.length > 0
-                                  ? hostRispHits.length / hostRispAtBats.length
-                                  : 0
-                              }
-                              statType="average"
-                              format="decimal"
-                            />
-                          </TableCell>
-                          <TableCell className="text-center font-bold">
-                            <StatValue
-                              value={
-                                teammateRispAtBats.length > 0
-                                  ? teammateRispHits.length /
-                                    teammateRispAtBats.length
-                                  : 0
-                              }
-                              statType="average"
-                              format="decimal"
-                            />
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {getComparisonIcon(
-                              hostRispAtBats.length > 0
-                                ? hostRispHits.length / hostRispAtBats.length
-                                : 0,
-                              teammateRispAtBats.length > 0
-                                ? teammateRispHits.length /
-                                    teammateRispAtBats.length
-                                : 0
-                            )}
-                          </TableCell>
-                        </TableRow>
+                        {(() => {
+                          const rows = [
+                            {
+                              label: "득점권 타석",
+                              values: [
+                                gameData.home.hostStats.rispAtBats,
+                                gameData.home.teammateStats.rispAtBats,
+                                gameData.away.hostStats.rispAtBats,
+                                gameData.away.teammateStats.rispAtBats,
+                              ],
+                            },
+                            {
+                              label: "득점권 안타",
+                              values: [
+                                gameData.home.hostStats.rispHits,
+                                gameData.home.teammateStats.rispHits,
+                                gameData.away.hostStats.rispHits,
+                                gameData.away.teammateStats.rispHits,
+                              ],
+                            },
+                            {
+                              label: "득점권 타율",
+                              values: [
+                                gameData.home.hostStats.rispAverage,
+                                gameData.home.teammateStats.rispAverage,
+                                gameData.away.hostStats.rispAverage,
+                                gameData.away.teammateStats.rispAverage,
+                              ],
+                              isDecimal: true,
+                            },
+                          ];
+                          return rows.map((row, i) => {
+                            const max = Math.max(...row.values);
+                            return (
+                              <TableRow key={i} className="border-border">
+                                <TableCell>{row.label}</TableCell>
+                                {row.values.map((v, idx) => (
+                                  <TableCell
+                                    key={idx}
+                                    className={`text-center font-bold ${row.isDecimal ? (v === max && max !== 0 ? "text-green-400" : "") : ""}`}
+                                  >
+                                    {row.isDecimal ? v.toFixed(3) : v}
+                                    {row.isDecimal && v === max && max !== 0 && row.values.filter(x => x === max).length === 1 ? (
+                                      <span className="ml-1 text-yellow-400">⭐</span>
+                                    ) : null}
+                                  </TableCell>
+                                ))}
+                              </TableRow>
+                            );
+                          });
+                        })()}
                       </TableBody>
                     </Table>
                   </CardContent>
@@ -861,117 +821,141 @@ export default function GameDetailPage() {
                 <Card className="border-border">
                   <CardHeader>
                     <CardTitle className="text-lg">클러치 상황 분석</CardTitle>
-                    <CardDescription>
-                      득점권 + 2아웃 상황에서의 성과
-                    </CardDescription>
+                    <CardDescription>득점권 + 2아웃 상황에서의 성과</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold showstats-highlight mb-1">
-                          {clutchSituations.length}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          총 클러치 상황
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="text-center p-3 bg-teal-50/50 dark:bg-teal-950/20 rounded">
-                          <div className="text-lg font-bold text-teal-600 dark:text-teal-400">
-                            {hostClutchAtBats.length}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            나의 클러치 타석
-                          </div>
-                          <div className="text-sm font-medium mt-1">
-                            성공: {myClutchSuccess.length}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            성공률:{" "}
-                            {hostClutchAtBats.length > 0
-                              ? (
-                                  (myClutchSuccess.length /
-                                    hostClutchAtBats.length) *
-                                  100
-                                ).toFixed(1)
-                              : "0"}
-                            %
-                          </div>
-                        </div>
-
-                        <div className="text-center p-3 bg-rose-50/50 dark:bg-rose-950/20 rounded">
-                          <div className="text-lg font-bold text-rose-600 dark:text-rose-400">
-                            {teammateClutchAtBats.length}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            팀원 클러치 타석
-                          </div>
-                          <div className="text-sm font-medium mt-1">
-                            성공: {friendClutchSuccess.length}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            성공률:{" "}
-                            {teammateClutchAtBats.length > 0
-                              ? (
-                                  (friendClutchSuccess.length /
-                                    teammateClutchAtBats.length) *
-                                  100
-                                ).toFixed(1)
-                              : "0"}
-                            %
-                          </div>
-                        </div>
-                      </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* 홈팀 클러치 */}
+                      <Card className="border-red-400 bg-background flex flex-col h-full">
+                        <CardHeader className="flex flex-row items-center gap-2 pb-2">
+                          <span className="px-2 py-1 rounded bg-red-400 text-white text-xs font-bold">홈팀</span>
+                          <span className="font-bold text-red-500">{gameData.lineScore.home_full_name}</span>
+                          {gameData.homeTeamLogo && (
+                            <Image src={gameData.homeTeamLogo} alt="홈팀 로고" width={28} height={28} className="rounded-full border border-red-300 bg-white" />
+                          )}
+                        </CardHeader>
+                        <CardContent className="flex-1 flex flex-col justify-between pt-0 gap-4">
+                          {[0, 1].map(idx => {
+                            const row = idx === 0 ? clutchRows[0] : clutchRows[1];
+                            return (
+                              <div key={idx} className={`rounded-lg p-4 w-full bg-background text-white border border-white/10`}>
+                                <div className="text-base font-bold mb-1">{row.label}</div>
+                                <div className="text-3xl font-bold mb-2">{row.clutch || 0}</div>
+                                <div className="text-sm mb-1">클러치 타석</div>
+                                <div className="text-lg font-bold">성공: {row.success || 0}</div>
+                                <div className="text-xs text-white/80">
+                                  성공률: {row.clutch ? ((row.success / row.clutch) * 100).toFixed(1) : "0.0"}%
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </CardContent>
+                      </Card>
+                      {/* 어웨이팀 클러치 */}
+                      <Card className="border-blue-400 bg-background flex flex-col h-full">
+                        <CardHeader className="flex flex-row items-center gap-2 pb-2">
+                          <span className="px-2 py-1 rounded bg-blue-400 text-white text-xs font-bold">어웨이팀</span>
+                          <span className="font-bold text-blue-500">{gameData.lineScore.away_full_name}</span>
+                          {gameData.awayTeamLogo && (
+                            <Image src={gameData.awayTeamLogo} alt="어웨이팀 로고" width={28} height={28} className="rounded-full border border-blue-300 bg-white" />
+                          )}
+                        </CardHeader>
+                        <CardContent className="flex-1 flex flex-col justify-between pt-0 gap-4">
+                          {[2, 3].map(idx => {
+                            const row = clutchRows[idx];
+                            return (
+                              <div key={idx} className={`rounded-lg p-4 w-full bg-background text-white border border-white/10`}>
+                                <div className="text-base font-bold mb-1">{row.label}</div>
+                                <div className="text-3xl font-bold mb-2">{row.clutch || 0}</div>
+                                <div className="text-sm mb-1">클러치 타석</div>
+                                <div className="text-lg font-bold">성공: {row.success || 0}</div>
+                                <div className="text-xs text-white/80">
+                                  성공률: {row.clutch ? ((row.success / row.clutch) * 100).toFixed(1) : "0.0"}%
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </CardContent>
+                      </Card>
                     </div>
                   </CardContent>
                 </Card>
               </div>
 
-              {scoringPlays.length > 0 ? (
-                <>
-                  {/* 득점 요약 및 분석 */}
-                  <ScoringSummary
-                    plays={scoringPlays}
-                    allAtBats={gameData.home.ownership.totalAtBats}
-                  />
-
-                  {/* 개별 득점 상황 */}
-                  <Card className="border-border">
-                    <CardHeader>
-                      <CardTitle className="text-lg">개별 득점 상황</CardTitle>
-                      <CardDescription>
-                        각 득점 상황의 세부 내용을 확인해보세요 (아웃카운트
-                        포함)
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {scoringPlays.map((play) => (
-                          <ScoringPlayCard
-                            key={play.id}
-                            play={play}
-                            className="bg-muted/20"
-                          />
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </>
-              ) : (
-                <Card className="border-border">
-                  <CardContent className="py-12">
-                    <div className="text-center">
-                      <p className="text-muted-foreground mb-2">
-                        이 게임에서는 득점 상황이 없습니다.
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        RBI가 기록된 타석이 없어 득점 분석을 표시할 수 없습니다.
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              {/* 득점 요약 */}
+              <Card className="border-border">
+                <CardHeader>
+                  <CardTitle className="text-lg">득점 요약</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* 홈팀 득점 요약 */}
+                    <Card className="border-red-400 bg-red-50/10 flex flex-col h-full">
+                      <CardHeader className="flex flex-row items-center gap-2 pb-2">
+                        <span className="px-2 py-1 rounded bg-red-400 text-white text-xs font-bold">홈팀</span>
+                        <span className="font-bold text-red-500">{gameData.lineScore.home_full_name}</span>
+                        {gameData.homeTeamLogo && (
+                          <Image src={gameData.homeTeamLogo} alt="홈팀 로고" width={28} height={28} className="rounded-full border border-red-300 bg-white" />
+                        )}
+                      </CardHeader>
+                      <CardContent className="flex-1 flex flex-col justify-between pt-0">
+                        <ScoringSummary
+                          plays={gameData.home.ownership.totalAtBats.filter(atBat => atBat.rbi && atBat.rbi > 0).map((atBat, index) => ({
+                            id: `home-scoring-${index}`,
+                            inning: atBat.inning,
+                            inningHalf: atBat.isTopInning ? "top" : "bottom",
+                            outs: atBat.outsBefore || 0,
+                            runners: {
+                              first: atBat.runnersBefore && (atBat.runnersBefore["1"] || Object.values(atBat.runnersBefore).find(base => base === 1)) ? "주자" : false,
+                              second: atBat.runnersBefore && (atBat.runnersBefore["2"] || Object.values(atBat.runnersBefore).find(base => base === 2)) ? "주자" : false,
+                              third: atBat.runnersBefore && (atBat.runnersBefore["3"] || Object.values(atBat.runnersBefore).find(base => base === 3)) ? "주자" : false,
+                            },
+                            batter: atBat.batter,
+                            batterOwner: atBat.isHost ? "호스트" : "팀원",
+                            result: atBat.result?.replace("_", " ") ?? "",
+                            runsScored: atBat.rbi ?? 0,
+                            description: atBat.log.join(" "),
+                          }))}
+                          allAtBats={gameData.home.ownership.totalAtBats}
+                          className=""
+                        />
+                      </CardContent>
+                    </Card>
+                    {/* 어웨이팀 득점 요약 */}
+                    <Card className="border-blue-400 bg-blue-50/10 flex flex-col h-full">
+                      <CardHeader className="flex flex-row items-center gap-2 pb-2">
+                        <span className="px-2 py-1 rounded bg-blue-400 text-white text-xs font-bold">어웨이팀</span>
+                        <span className="font-bold text-blue-500">{gameData.lineScore.away_full_name}</span>
+                        {gameData.awayTeamLogo && (
+                          <Image src={gameData.awayTeamLogo} alt="어웨이팀 로고" width={28} height={28} className="rounded-full border border-blue-300 bg-white" />
+                        )}
+                      </CardHeader>
+                      <CardContent className="flex-1 flex flex-col justify-between pt-0">
+                        <ScoringSummary
+                          plays={gameData.away.ownership.totalAtBats.filter(atBat => atBat.rbi && atBat.rbi > 0).map((atBat, index) => ({
+                            id: `away-scoring-${index}`,
+                            inning: atBat.inning,
+                            inningHalf: atBat.isTopInning ? "top" : "bottom",
+                            outs: atBat.outsBefore || 0,
+                            runners: {
+                              first: atBat.runnersBefore && (atBat.runnersBefore["1"] || Object.values(atBat.runnersBefore).find(base => base === 1)) ? "주자" : false,
+                              second: atBat.runnersBefore && (atBat.runnersBefore["2"] || Object.values(atBat.runnersBefore).find(base => base === 2)) ? "주자" : false,
+                              third: atBat.runnersBefore && (atBat.runnersBefore["3"] || Object.values(atBat.runnersBefore).find(base => base === 3)) ? "주자" : false,
+                            },
+                            batter: atBat.batter,
+                            batterOwner: atBat.isHost ? "호스트" : "팀원",
+                            result: atBat.result?.replace("_", " ") ?? "",
+                            runsScored: atBat.rbi ?? 0,
+                            description: atBat.log.join(" "),
+                          }))}
+                          allAtBats={gameData.away.ownership.totalAtBats}
+                          className=""
+                        />
+                      </CardContent>
+                    </Card>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* 타석 상세 */}
