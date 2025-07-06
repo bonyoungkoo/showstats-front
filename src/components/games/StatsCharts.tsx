@@ -7,39 +7,14 @@ import {
   getERAGrade,
   STAT_COLORS,
 } from "@/lib/stat-colors";
+import { UserStats } from "@/hooks/useUserProfile";
 
 interface GameData {
   result: string;
 }
-
-interface UserStats {
-  username: string;
-  display_level: string;
-  games_played: string;
-  vanity: {
-    nameplate_equipped: string;
-    icon_equipped: string;
-  };
-  most_played_modes: {
-    dd_time: string;
-    playnow_time: string;
-    rtts_time: string;
-    [key: string]: string;
-  };
-  lifetime_hitting_stats: Array<{ [key: string]: number }>;
-  online_data: Array<{
-    year: string;
-    wins: string;
-    loses: string;
-    hr: string;
-    batting_average: string;
-    era: string;
-  }>;
-}
-
 interface StatsChartsProps {
   gameData: GameData[];
-  userStats?: UserStats | null;
+  userStats?: UserStats;
 }
 
 export default function StatsCharts({ gameData, userStats }: StatsChartsProps) {
@@ -48,6 +23,8 @@ export default function StatsCharts({ gameData, userStats }: StatsChartsProps) {
   const losses = gameData.filter((game) => game.result === "패배").length;
   const totalGames = wins + losses;
   const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
+
+  console.log('userStats', userStats)
 
   // 게임 데이터가 없으면 기본 데이터 사용
   const hasGameData = totalGames > 0;
@@ -61,15 +38,13 @@ export default function StatsCharts({ gameData, userStats }: StatsChartsProps) {
     : [{ name: "데이터 없음", value: 1, color: "#6b7280" }];
 
   // 유저 API 데이터에서 통계 가져오기 (있는 경우)
-  const currentSeasonData =
-    userStats?.online_data?.find((data) => data.year === "2025") ||
-    userStats?.online_data?.find((data) => data.year === "Total");
+  const totalSeasonData = userStats?.online_data?.find((data) => data.year === "Total");
 
   // 막대 그래프 데이터 (타율, 평균자책점만)
-  const battingAvg = currentSeasonData
-    ? parseFloat(currentSeasonData.batting_average)
+  const battingAvg = totalSeasonData
+    ? parseFloat(totalSeasonData.batting_average)
     : 0.275;
-  const era = currentSeasonData ? parseFloat(currentSeasonData.era) : 3.5;
+  const era = totalSeasonData ? parseFloat(totalSeasonData.era) : 3.5;
 
   const barData = [
     {
@@ -77,14 +52,14 @@ export default function StatsCharts({ gameData, userStats }: StatsChartsProps) {
       value: battingAvg,
       colorConfig: STAT_COLORS[getBattingAverageGrade(battingAvg)],
       max: 0.4, // 타율 최대값
-      displayValue: currentSeasonData ? battingAvg.toFixed(3) : "정보 없음",
+      displayValue: totalSeasonData ? battingAvg.toFixed(3) : "정보 없음",
     },
     {
       name: "평균자책점",
       value: era,
       colorConfig: STAT_COLORS[getERAGrade(era)],
       max: 6.0, // ERA 최대값
-      displayValue: currentSeasonData ? era.toFixed(2) : "정보 없음",
+      displayValue: totalSeasonData ? era.toFixed(2) : "정보 없음",
     },
   ];
 

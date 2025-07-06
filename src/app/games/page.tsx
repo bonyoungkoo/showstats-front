@@ -120,9 +120,9 @@ function GamesPageContent() {
   // 검색시 최근 검색 기록에 추가
   useEffect(() => {
     if (username) {
-      addSearch(username, userProfile?.displayName);
+      addSearch(username, userProfile?.playerInfo.universal_profiles[0].username);
     }
-  }, [username, userProfile?.displayName, addSearch]);
+  }, [username, addSearch, userProfile?.playerInfo.universal_profiles]);
 
   // 게임 모드 체크를 위한 병렬 API 호출
   const checkGameModes = useCallback(
@@ -365,7 +365,7 @@ function GamesPageContent() {
               result: isUserWin ? "승리" : "패배",
             };
           })}
-          userStats={undefined}
+          userStats={userProfile?.playerInfo.universal_profiles[0]}
         />
       )}
 
@@ -399,7 +399,7 @@ function GamesPageContent() {
                   <TableHead>매치업</TableHead>
                   <TableHead>스코어</TableHead>
                   <TableHead>결과</TableHead>
-                  <TableHead>나의 기록</TableHead>
+                  {/* <TableHead>나의 기록</TableHead> */}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -503,7 +503,7 @@ function GamesPageContent() {
                         );
                       })()}
                     </TableCell>
-                    <TableCell>
+                    {/* <TableCell>
                       <div className="text-sm">
                         <div className="font-medium">
                           {Math.floor(Math.random() * 5) + 1}H,{" "}
@@ -514,7 +514,7 @@ function GamesPageContent() {
                           AVG .{Math.floor(Math.random() * 300) + 200}
                         </div>
                       </div>
-                    </TableCell>
+                    </TableCell> */}
                   </TableRow>
                 ))}
               </TableBody>

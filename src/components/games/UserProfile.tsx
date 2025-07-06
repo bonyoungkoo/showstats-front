@@ -164,10 +164,8 @@ export default function UserProfile({
   const ddTime = parseInt(userStats.most_played_modes.dd_time || "0");
   const ddHours = Math.floor(ddTime / 60);
 
-  // 현재 시즌 데이터 (가장 최신)
-  const currentSeasonData =
-    userStats.online_data.find((data) => data.year === "2025") ||
-    userStats.online_data.find((data) => data.year === "Total");
+  // 전체 시즌 데이터
+  const totalSeasonData = userStats.online_data.find((data) => data.year === "Total");
 
   return (
     <Card className="showstats-card mb-6">
@@ -222,17 +220,17 @@ export default function UserProfile({
               </div>
 
               {/* 시즌 성과 - 프로필 바로 아래 */}
-              {currentSeasonData && (
+              {totalSeasonData && (
                 <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
                   <span className="font-semibold">
-                    {currentSeasonData.wins}승
+                    {totalSeasonData.wins}승
                   </span>
                   <span className="font-semibold">
-                    {currentSeasonData.loses}패
+                    {totalSeasonData.loses}패
                   </span>
-                  <span>타율 {currentSeasonData.batting_average}</span>
-                  <span>{currentSeasonData.hr} HR</span>
-                  <span>평균자책점 {currentSeasonData.era}</span>
+                  <span>타율 {totalSeasonData.batting_average}</span>
+                  <span>{totalSeasonData.hr} HR</span>
+                  <span>평균자책점 {totalSeasonData.era}</span>
                 </div>
               )}
             </div>
@@ -263,16 +261,17 @@ export default function UserProfile({
                   총 플레이 시간
                 </div>
               </div>
-              {currentSeasonData && (
+              {totalSeasonData && (
                 <div className="text-center">
                   {(() => {
-                    const winRate = Math.round(
-                      (parseInt(currentSeasonData.wins) /
-                        (parseInt(currentSeasonData.wins) +
-                          parseInt(currentSeasonData.loses))) *
+                    const winRate = 
+                      parseInt(totalSeasonData.wins) + parseInt(totalSeasonData.loses) === 0 ? ' - ' : Math.round(
+                      (parseInt(totalSeasonData.wins) /
+                        (parseInt(totalSeasonData.wins) +
+                          parseInt(totalSeasonData.loses))) *
                         100
                     );
-                    const winRateColor = getStatColor(winRate, "winRate");
+                    const winRateColor = getStatColor(winRate as number, "winRate");
                     return (
                       <div
                         className={`text-3xl font-bold mb-1 ${winRateColor.color}`}

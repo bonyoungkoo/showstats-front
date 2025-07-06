@@ -1,22 +1,37 @@
 import { useQuery } from "@tanstack/react-query";
 
-export interface UserProfile {
+export interface UserStats {
   username: string;
-  displayName?: string;
-  totalGames: number;
-  coopGames: number;
-  lastPlayed?: string;
-  avatar?: string;
-  stats?: {
-    totalHits: number;
-    totalHomeRuns: number;
-    totalRBIs: number;
-    averageBattingAverage: number;
+  display_level: string;
+  games_played: string;
+  vanity: {
+    nameplate_equipped: string;
+    icon_equipped: string;
   };
+  most_played_modes: {
+    dd_time: string;
+    playnow_time: string;
+    rtts_time: string;
+    [key: string]: string;
+  };
+  lifetime_hitting_stats: Array<{ [key: string]: number }>;
+  online_data: Array<{
+    year: string;
+    wins: string;
+    loses: string;
+    hr: string;
+    batting_average: string;
+    era: string;
+  }>;
+}
+export interface UserProfile {
+  playerInfo: {
+    universal_profiles: UserStats[];
+  };
+  iconImageUrl: string;
 }
 
 async function fetchUserProfile(username: string): Promise<UserProfile> {
-  // 현재는 가상의 API이지만, 실제 API가 있다면 여기서 호출
   const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${username}`, {
     method: "GET",
     headers: {
@@ -25,15 +40,6 @@ async function fetchUserProfile(username: string): Promise<UserProfile> {
   });
 
   if (!response.ok) {
-    // API가 아직 없다면 기본 데이터 반환
-    if (response.status === 404) {
-      return {
-        username,
-        displayName: username,
-        totalGames: 0,
-        coopGames: 0,
-      };
-    }
     throw new Error(
       `유저 프로필을 불러오는데 실패했습니다: ${response.status}`
     );

@@ -463,7 +463,7 @@ export default function GameDetailPage() {
                               <span className="font-bold text-xs text-white mb-1 flex items-center justify-center">
                                 {gameData.lineScore.home_full_name}
                                 {gameData.homeTeamLogo && (
-                                  <img src={gameData.homeTeamLogo} alt="홈팀로고" width={18} height={18} className="inline-block rounded-full ml-1 align-middle" />
+                                  <Image src={gameData.homeTeamLogo} alt="홈팀로고" width={18} height={18} className="inline-block rounded-full ml-1 align-middle" />
                                 )}
                               </span>
                             </div>
@@ -473,7 +473,7 @@ export default function GameDetailPage() {
                               <span className="font-bold text-xs text-white mb-1 flex items-center justify-center">
                                 {gameData.lineScore.away_full_name}
                                 {gameData.awayTeamLogo && (
-                                  <img src={gameData.awayTeamLogo} alt="어웨이팀로고" width={18} height={18} className="inline-block rounded-full ml-1 align-middle" />
+                                  <Image src={gameData.awayTeamLogo} alt="어웨이팀로고" width={18} height={18} className="inline-block rounded-full ml-1 align-middle" />
                                 )}
                               </span>
                             </div>
@@ -588,7 +588,7 @@ export default function GameDetailPage() {
                               <span className="font-bold text-xs text-white mb-1 flex items-center justify-center">
                                 {gameData.lineScore.home_full_name}
                                 {gameData.homeTeamLogo && (
-                                  <img src={gameData.homeTeamLogo} alt="홈팀로고" width={18} height={18} className="inline-block rounded-full ml-1 align-middle" />
+                                  <Image src={gameData.homeTeamLogo} alt="홈팀로고" width={18} height={18} className="inline-block rounded-full ml-1 align-middle" />
                                 )}
                               </span>
                             </div>
@@ -598,7 +598,7 @@ export default function GameDetailPage() {
                               <span className="font-bold text-xs text-white mb-1 flex items-center justify-center">
                                 {gameData.lineScore.away_full_name}
                                 {gameData.awayTeamLogo && (
-                                  <img src={gameData.awayTeamLogo} alt="어웨이팀로고" width={18} height={18} className="inline-block rounded-full ml-1 align-middle" />
+                                  <Image src={gameData.awayTeamLogo} alt="어웨이팀로고" width={18} height={18} className="inline-block rounded-full ml-1 align-middle" />
                                 )}
                               </span>
                             </div>
