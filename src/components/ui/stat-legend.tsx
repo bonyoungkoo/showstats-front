@@ -19,7 +19,7 @@ export function StatLegend() {
         <CardTitle className="text-lg">통계 등급 범례</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-8 gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-5 lg:grid-cols-8 gap-2">
           {GRADE_ORDER.map((grade) => {
             const config = STAT_COLORS[grade];
             return (
