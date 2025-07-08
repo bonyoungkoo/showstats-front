@@ -88,42 +88,56 @@ export default function GameDetailPage() {
 
   // 홈팀 클러치 타석/성공
   const homeHostClutchAtBats = gameData.home.ownership.hostAtBats.filter(
-    (atBat) => isRunnerInScoringPosition(atBat.runnersBefore ?? {}) && atBat.outsBefore === 2
+    (atBat) =>
+      isRunnerInScoringPosition(atBat.runnersBefore ?? {}) &&
+      atBat.outsBefore === 2
   );
-  const homeTeammateClutchAtBats = gameData.home.ownership.teammateAtBats.filter(
-    (atBat) => isRunnerInScoringPosition(atBat.runnersBefore ?? {}) && atBat.outsBefore === 2
-  );
+  const homeTeammateClutchAtBats =
+    gameData.home.ownership.teammateAtBats.filter(
+      (atBat) =>
+        isRunnerInScoringPosition(atBat.runnersBefore ?? {}) &&
+        atBat.outsBefore === 2
+    );
   const awayHostClutchAtBats = gameData.away.ownership.hostAtBats.filter(
-    (atBat) => isRunnerInScoringPosition(atBat.runnersBefore ?? {}) && atBat.outsBefore === 2
+    (atBat) =>
+      isRunnerInScoringPosition(atBat.runnersBefore ?? {}) &&
+      atBat.outsBefore === 2
   );
-  const awayTeammateClutchAtBats = gameData.away.ownership.teammateAtBats.filter(
-    (atBat) => isRunnerInScoringPosition(atBat.runnersBefore ?? {}) && atBat.outsBefore === 2
-  );
+  const awayTeammateClutchAtBats =
+    gameData.away.ownership.teammateAtBats.filter(
+      (atBat) =>
+        isRunnerInScoringPosition(atBat.runnersBefore ?? {}) &&
+        atBat.outsBefore === 2
+    );
 
   const clutchRows = [
     {
       label: `${gameData.lineScore.home_full_name} 호스트`,
       color: "bg-blue-500",
       clutch: homeHostClutchAtBats.length,
-      success: homeHostClutchAtBats.filter((atBat) => (atBat.rbi ?? 0) > 0).length,
+      success: homeHostClutchAtBats.filter((atBat) => (atBat.rbi ?? 0) > 0)
+        .length,
     },
     {
       label: `${gameData.lineScore.home_full_name} 팀원`,
       color: "bg-blue-300",
       clutch: homeTeammateClutchAtBats.length,
-      success: homeTeammateClutchAtBats.filter((atBat) => (atBat.rbi ?? 0) > 0).length,
+      success: homeTeammateClutchAtBats.filter((atBat) => (atBat.rbi ?? 0) > 0)
+        .length,
     },
     {
       label: `${gameData.lineScore.away_full_name} 호스트`,
       color: "bg-red-500",
       clutch: awayHostClutchAtBats.length,
-      success: awayHostClutchAtBats.filter((atBat) => (atBat.rbi ?? 0) > 0).length,
+      success: awayHostClutchAtBats.filter((atBat) => (atBat.rbi ?? 0) > 0)
+        .length,
     },
     {
       label: `${gameData.lineScore.away_full_name} 팀원`,
       color: "bg-red-300",
       clutch: awayTeammateClutchAtBats.length,
-      success: awayTeammateClutchAtBats.filter((atBat) => (atBat.rbi ?? 0) > 0).length,
+      success: awayTeammateClutchAtBats.filter((atBat) => (atBat.rbi ?? 0) > 0)
+        .length,
     },
   ];
 
@@ -140,11 +154,13 @@ export default function GameDetailPage() {
             {/* 팀 vs 팀 */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex-1 text-center">
-                <h2 className="text-2xl md:text-3xl font-bold mb-2">
-                  {gameData.lineScore.away_full_name}
+                <h2 className="text-xl md:text-3xl font-bold mb-2">
+                  {gameData.lineScore.away_full_name.length > 10
+                    ? `${gameData.lineScore.away_full_name.slice(0, 10)}...`
+                    : gameData.lineScore.away_full_name}
                 </h2>
                 <div className="flex items-center justify-center gap-2">
-                  <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center overflow-hidden">
+                  <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center overflow-hidden">
                     <Image
                       src={gameData.awayTeamLogo ?? ""}
                       alt={gameData.lineScore.away_full_name || "어웨이팀"}
@@ -157,7 +173,7 @@ export default function GameDetailPage() {
                 </div>
               </div>
 
-              <div className="flex flex-col items-center mx-8">
+              <div className="flex flex-col items-center mx-2">
                 <div className="text-4xl md:text-6xl font-bold mb-2">
                   {gameData.lineScore?.home_runs !== undefined &&
                   gameData.lineScore?.away_runs !== undefined ? (
@@ -184,15 +200,16 @@ export default function GameDetailPage() {
                     </>
                   )}
                 </div>
-               
               </div>
 
               <div className="flex-1 text-center">
-                <h2 className="text-2xl md:text-3xl font-bold mb-2">
-                  {gameData.lineScore.home_full_name}
+                <h2 className="text-xl md:text-3xl font-bold mb-2">
+                  {gameData.lineScore.home_full_name.length > 8
+                    ? `${gameData.lineScore.home_full_name.slice(0, 8)}..`
+                    : gameData.lineScore.home_full_name}
                 </h2>
                 <div className="flex items-center justify-center gap-2">
-                  <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center overflow-hidden">
+                  <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center overflow-hidden">
                     <Image
                       src={gameData.homeTeamLogo ?? ""}
                       alt={gameData.lineScore.home_full_name ?? ""}
@@ -252,7 +269,8 @@ export default function GameDetailPage() {
                   어웨이팀 기록
                 </div>
                 <div className="text-sm text-gray-300">
-                  {gameData.away.totalStats.hits}H • {gameData.away.totalStats.rbis}RBI •{" "}
+                  {gameData.away.totalStats.hits}H •{" "}
+                  {gameData.away.totalStats.rbis}RBI •{" "}
                   {gameData.away.totalStats.homeRuns}HR
                 </div>
                 <div className="text-lg font-bold">
@@ -264,8 +282,9 @@ export default function GameDetailPage() {
                   홈팀 기록
                 </div>
                 <div className="text-sm text-gray-300">
-                  {gameData.home.totalStats.hits}H • {gameData.home.totalStats.rbis}RBI
-                  • {gameData.home.totalStats.homeRuns}HR
+                  {gameData.home.totalStats.hits}H •{" "}
+                  {gameData.home.totalStats.rbis}RBI •{" "}
+                  {gameData.home.totalStats.homeRuns}HR
                 </div>
                 <div className="text-lg font-bold">
                   AVG {gameData.home.totalStats.average.toFixed(3)}
@@ -278,12 +297,14 @@ export default function GameDetailPage() {
               <Badge
                 variant="outline"
                 className={`border-white/30 ${
-                  gameData.validation.home.hitsMatch && gameData.validation.home.runsMatch
+                  gameData.validation.home.hitsMatch &&
+                  gameData.validation.home.runsMatch
                     ? "text-green-400"
                     : "text-yellow-400"
                 }`}
               >
-                {gameData.validation.home.hitsMatch && gameData.validation.home.runsMatch
+                {gameData.validation.home.hitsMatch &&
+                gameData.validation.home.runsMatch
                   ? "✓ 데이터 검증 완료"
                   : "⚠ 데이터 검증 필요"}
               </Badge>
@@ -318,20 +339,29 @@ export default function GameDetailPage() {
         {/* 홈팀 카드 */}
         <Card className="border-border">
           <CardHeader>
-            <CardTitle className="text-blue-500">{gameData.lineScore.home_full_name} (홈)</CardTitle>
+            <CardTitle className="text-blue-500">
+              {gameData.lineScore.home_full_name} (홈)
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-row justify-around items-center gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold showstats-highlight">{gameData.lineScore.home_hits}</div>
+                <div className="text-2xl font-bold showstats-highlight">
+                  {gameData.lineScore.home_hits}
+                </div>
                 <p className="text-sm text-muted-foreground">총 안타</p>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold showstats-highlight">{gameData.lineScore.home_runs}</div>
+                <div className="text-2xl font-bold showstats-highlight">
+                  {gameData.lineScore.home_runs}
+                </div>
                 <p className="text-sm text-muted-foreground">총 득점</p>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold showstats-highlight">{gameData.home.totalStats.atBats + gameData.home.totalStats.walks}</div>
+                <div className="text-2xl font-bold showstats-highlight">
+                  {gameData.home.totalStats.atBats +
+                    gameData.home.totalStats.walks}
+                </div>
                 <p className="text-sm text-muted-foreground">총 타석</p>
               </div>
             </div>
@@ -340,20 +370,29 @@ export default function GameDetailPage() {
         {/* 어웨이팀 카드 */}
         <Card className="border-border">
           <CardHeader>
-            <CardTitle className="text-red-500">{gameData.lineScore.away_full_name} (어웨이)</CardTitle>
+            <CardTitle className="text-red-500">
+              {gameData.lineScore.away_full_name} (어웨이)
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-row justify-around items-center gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold showstats-highlight">{gameData.lineScore.away_hits}</div>
+                <div className="text-2xl font-bold showstats-highlight">
+                  {gameData.lineScore.away_hits}
+                </div>
                 <p className="text-sm text-muted-foreground">총 안타</p>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold showstats-highlight">{gameData.lineScore.away_runs}</div>
+                <div className="text-2xl font-bold showstats-highlight">
+                  {gameData.lineScore.away_runs}
+                </div>
                 <p className="text-sm text-muted-foreground">총 득점</p>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold showstats-highlight">{gameData.away.totalStats.atBats + gameData.away.totalStats.walks}</div>
+                <div className="text-2xl font-bold showstats-highlight">
+                  {gameData.away.totalStats.atBats +
+                    gameData.away.totalStats.walks}
+                </div>
                 <p className="text-sm text-muted-foreground">총 타석</p>
               </div>
             </div>
@@ -370,7 +409,9 @@ export default function GameDetailPage() {
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div className="text-center">
-                <div className="text-sm text-muted-foreground mb-1">출석률</div>
+                <div className="text-sm text-muted-foreground mb-1">
+                  관중 수
+                </div>
                 <div className="font-medium">
                   {gameData.gameMetadata.attendance}
                 </div>
@@ -437,7 +478,7 @@ export default function GameDetailPage() {
 
       {/* 메인 컨텐츠 */}
       <Card className="border-border showstats-card">
-        <CardContent className="p-6">
+        <CardContent className="py-6 px-0">
           <Tabs defaultValue="batting" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="batting">타격 비교</TabsTrigger>
@@ -463,7 +504,13 @@ export default function GameDetailPage() {
                               <span className="font-bold text-xs text-white mb-1 flex items-center justify-center">
                                 {gameData.lineScore.home_full_name}
                                 {gameData.homeTeamLogo && (
-                                  <Image src={gameData.homeTeamLogo} alt="홈팀로고" width={18} height={18} className="inline-block rounded-full ml-1 align-middle" />
+                                  <Image
+                                    src={gameData.homeTeamLogo}
+                                    alt="홈팀로고"
+                                    width={18}
+                                    height={18}
+                                    className="inline-block rounded-full ml-1 align-middle"
+                                  />
                                 )}
                               </span>
                             </div>
@@ -473,7 +520,13 @@ export default function GameDetailPage() {
                               <span className="font-bold text-xs text-white mb-1 flex items-center justify-center">
                                 {gameData.lineScore.away_full_name}
                                 {gameData.awayTeamLogo && (
-                                  <Image src={gameData.awayTeamLogo} alt="어웨이팀로고" width={18} height={18} className="inline-block rounded-full ml-1 align-middle" />
+                                  <Image
+                                    src={gameData.awayTeamLogo}
+                                    alt="어웨이팀로고"
+                                    width={18}
+                                    height={18}
+                                    className="inline-block rounded-full ml-1 align-middle"
+                                  />
                                 )}
                               </span>
                             </div>
@@ -482,19 +535,27 @@ export default function GameDetailPage() {
                         <TableRow>
                           <TableHead className="w-32">항목</TableHead>
                           <TableHead className="text-center w-32">
-                            <span className="px-1.5 py-0.5 rounded bg-red-400 text-white text-[10px] font-bold mr-1">홈팀</span>
+                            <span className="px-1.5 py-0.5 rounded bg-red-400 text-white text-[10px] font-bold mr-1">
+                              홈팀
+                            </span>
                             호스트
                           </TableHead>
                           <TableHead className="text-center w-32">
-                            <span className="px-1.5 py-0.5 rounded bg-red-400 text-white text-[10px] font-bold mr-1">홈팀</span>
+                            <span className="px-1.5 py-0.5 rounded bg-red-400 text-white text-[10px] font-bold mr-1">
+                              홈팀
+                            </span>
                             팀원
                           </TableHead>
                           <TableHead className="text-center w-32">
-                            <span className="px-1.5 py-0.5 rounded bg-blue-400 text-white text-[10px] font-bold mr-1">어웨이팀</span>
+                            <span className="px-1.5 py-0.5 rounded bg-blue-400 text-white text-[10px] font-bold mr-1">
+                              어웨이팀
+                            </span>
                             호스트
                           </TableHead>
                           <TableHead className="text-center w-32">
-                            <span className="px-1.5 py-0.5 rounded bg-blue-400 text-white text-[10px] font-bold mr-1">어웨이팀</span>
+                            <span className="px-1.5 py-0.5 rounded bg-blue-400 text-white text-[10px] font-bold mr-1">
+                              어웨이팀
+                            </span>
                             팀원
                           </TableHead>
                         </TableRow>
@@ -505,10 +566,14 @@ export default function GameDetailPage() {
                             {
                               label: "타석 (PA)",
                               values: [
-                                gameData.home.hostStats.atBats + gameData.home.hostStats.walks,
-                                gameData.home.teammateStats.atBats + gameData.home.teammateStats.walks,
-                                gameData.away.hostStats.atBats + gameData.away.hostStats.walks,
-                                gameData.away.teammateStats.atBats + gameData.away.teammateStats.walks,
+                                gameData.home.hostStats.atBats +
+                                  gameData.home.hostStats.walks,
+                                gameData.home.teammateStats.atBats +
+                                  gameData.home.teammateStats.walks,
+                                gameData.away.hostStats.atBats +
+                                  gameData.away.hostStats.walks,
+                                gameData.away.teammateStats.atBats +
+                                  gameData.away.teammateStats.walks,
                               ],
                             },
                             {
@@ -552,14 +617,23 @@ export default function GameDetailPage() {
                             const max = Math.max(...row.values);
                             return (
                               <TableRow key={i} className="border-border">
-                                <TableCell className="w-32">{row.label}</TableCell>
+                                <TableCell className="w-32">
+                                  {row.label}
+                                </TableCell>
                                 {row.values.map((v, idx) => (
                                   <TableCell
                                     key={idx}
                                     className={`text-center font-bold w-32`}
                                   >
-                                    {v === max && row.values.filter(x => x === max).length === 1 ? (
-                                      <span className="inline-block mr-1 text-yellow-400" title="최고 기록">⭐</span>
+                                    {v === max &&
+                                    row.values.filter((x) => x === max)
+                                      .length === 1 ? (
+                                      <span
+                                        className="inline-block mr-1 text-yellow-400"
+                                        title="최고 기록"
+                                      >
+                                        ⭐
+                                      </span>
                                     ) : null}
                                     {v}
                                   </TableCell>
@@ -588,7 +662,13 @@ export default function GameDetailPage() {
                               <span className="font-bold text-xs text-white mb-1 flex items-center justify-center">
                                 {gameData.lineScore.home_full_name}
                                 {gameData.homeTeamLogo && (
-                                  <Image src={gameData.homeTeamLogo} alt="홈팀로고" width={18} height={18} className="inline-block rounded-full ml-1 align-middle" />
+                                  <Image
+                                    src={gameData.homeTeamLogo}
+                                    alt="홈팀로고"
+                                    width={18}
+                                    height={18}
+                                    className="inline-block rounded-full ml-1 align-middle"
+                                  />
                                 )}
                               </span>
                             </div>
@@ -598,7 +678,13 @@ export default function GameDetailPage() {
                               <span className="font-bold text-xs text-white mb-1 flex items-center justify-center">
                                 {gameData.lineScore.away_full_name}
                                 {gameData.awayTeamLogo && (
-                                  <Image src={gameData.awayTeamLogo} alt="어웨이팀로고" width={18} height={18} className="inline-block rounded-full ml-1 align-middle" />
+                                  <Image
+                                    src={gameData.awayTeamLogo}
+                                    alt="어웨이팀로고"
+                                    width={18}
+                                    height={18}
+                                    className="inline-block rounded-full ml-1 align-middle"
+                                  />
                                 )}
                               </span>
                             </div>
@@ -607,19 +693,27 @@ export default function GameDetailPage() {
                         <TableRow>
                           <TableHead className="w-32">항목</TableHead>
                           <TableHead className="text-center w-32">
-                            <span className="px-1.5 py-0.5 rounded bg-red-400 text-white text-[10px] font-bold mr-1">홈팀</span>
+                            <span className="px-1.5 py-0.5 rounded bg-red-400 text-white text-[10px] font-bold mr-1">
+                              홈팀
+                            </span>
                             호스트
                           </TableHead>
                           <TableHead className="text-center w-32">
-                            <span className="px-1.5 py-0.5 rounded bg-red-400 text-white text-[10px] font-bold mr-1">홈팀</span>
+                            <span className="px-1.5 py-0.5 rounded bg-red-400 text-white text-[10px] font-bold mr-1">
+                              홈팀
+                            </span>
                             팀원
                           </TableHead>
                           <TableHead className="text-center w-32">
-                            <span className="px-1.5 py-0.5 rounded bg-blue-400 text-white text-[10px] font-bold mr-1">어웨이팀</span>
+                            <span className="px-1.5 py-0.5 rounded bg-blue-400 text-white text-[10px] font-bold mr-1">
+                              어웨이팀
+                            </span>
                             호스트
                           </TableHead>
                           <TableHead className="text-center w-32">
-                            <span className="px-1.5 py-0.5 rounded bg-blue-400 text-white text-[10px] font-bold mr-1">어웨이팀</span>
+                            <span className="px-1.5 py-0.5 rounded bg-blue-400 text-white text-[10px] font-bold mr-1">
+                              어웨이팀
+                            </span>
                             팀원
                           </TableHead>
                         </TableRow>
@@ -682,16 +776,28 @@ export default function GameDetailPage() {
                             const max = Math.max(...row.values);
                             return (
                               <TableRow key={i} className="border-border">
-                                <TableCell className="w-32">{row.label}</TableCell>
+                                <TableCell className="w-32">
+                                  {row.label}
+                                </TableCell>
                                 {row.values.map((v, idx) => {
-                                  const color = getStatColor(v, row.statType).color;
+                                  const color = getStatColor(
+                                    v,
+                                    row.statType
+                                  ).color;
                                   return (
                                     <TableCell
                                       key={idx}
                                       className={`text-center font-bold w-32 ${color}`}
                                     >
-                                      {v === max && row.values.filter(x => x === max).length === 1 ? (
-                                        <span className="inline-block mr-1 text-yellow-400" title="최고 기록">⭐</span>
+                                      {v === max &&
+                                      row.values.filter((x) => x === max)
+                                        .length === 1 ? (
+                                        <span
+                                          className="inline-block mr-1 text-yellow-400"
+                                          title="최고 기록"
+                                        >
+                                          ⭐
+                                        </span>
                                       ) : null}
                                       {v.toFixed(3)}
                                     </TableCell>
@@ -721,8 +827,12 @@ export default function GameDetailPage() {
                     awayStats={gameData.away}
                     homeTeamName={gameData.lineScore.home_full_name}
                     awayTeamName={gameData.lineScore.away_full_name}
-                    homeTeamLogo={gameData.homeTeamLogo ? String(gameData.homeTeamLogo) : ''}
-                    awayTeamLogo={gameData.awayTeamLogo ? String(gameData.awayTeamLogo) : ''}
+                    homeTeamLogo={
+                      gameData.homeTeamLogo ? String(gameData.homeTeamLogo) : ""
+                    }
+                    awayTeamLogo={
+                      gameData.awayTeamLogo ? String(gameData.awayTeamLogo) : ""
+                    }
                   />
                 </CardContent>
               </Card>
@@ -735,7 +845,9 @@ export default function GameDetailPage() {
                 <Card className="border-border">
                   <CardHeader>
                     <CardTitle className="text-lg">득점권 타격 분석</CardTitle>
-                    <CardDescription>2루 이상에 주자가 있는 상황에서의 성과</CardDescription>
+                    <CardDescription>
+                      2루 이상에 주자가 있는 상황에서의 성과
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <Table>
@@ -743,19 +855,27 @@ export default function GameDetailPage() {
                         <TableRow>
                           <TableHead>항목</TableHead>
                           <TableHead className="text-center">
-                            <span className="px-1.5 py-0.5 rounded bg-red-400 text-white text-[10px] font-bold mr-1">홈팀</span>
+                            <span className="px-1.5 py-0.5 rounded bg-red-400 text-white text-[10px] font-bold mr-1">
+                              홈팀
+                            </span>
                             호스트
                           </TableHead>
                           <TableHead className="text-center">
-                            <span className="px-1.5 py-0.5 rounded bg-red-400 text-white text-[10px] font-bold mr-1">홈팀</span>
+                            <span className="px-1.5 py-0.5 rounded bg-red-400 text-white text-[10px] font-bold mr-1">
+                              홈팀
+                            </span>
                             팀원
                           </TableHead>
                           <TableHead className="text-center">
-                            <span className="px-1.5 py-0.5 rounded bg-blue-400 text-white text-[10px] font-bold mr-1">어웨이팀</span>
+                            <span className="px-1.5 py-0.5 rounded bg-blue-400 text-white text-[10px] font-bold mr-1">
+                              어웨이팀
+                            </span>
                             호스트
                           </TableHead>
                           <TableHead className="text-center">
-                            <span className="px-1.5 py-0.5 rounded bg-blue-400 text-white text-[10px] font-bold mr-1">어웨이팀</span>
+                            <span className="px-1.5 py-0.5 rounded bg-blue-400 text-white text-[10px] font-bold mr-1">
+                              어웨이팀
+                            </span>
                             팀원
                           </TableHead>
                         </TableRow>
@@ -803,8 +923,14 @@ export default function GameDetailPage() {
                                     className={`text-center font-bold ${row.isDecimal ? (v === max && max !== 0 ? "text-green-400" : "") : ""}`}
                                   >
                                     {row.isDecimal ? v.toFixed(3) : v}
-                                    {row.isDecimal && v === max && max !== 0 && row.values.filter(x => x === max).length === 1 ? (
-                                      <span className="ml-1 text-yellow-400">⭐</span>
+                                    {row.isDecimal &&
+                                    v === max &&
+                                    max !== 0 &&
+                                    row.values.filter((x) => x === max)
+                                      .length === 1 ? (
+                                      <span className="ml-1 text-yellow-400">
+                                        ⭐
+                                      </span>
                                     ) : null}
                                   </TableCell>
                                 ))}
@@ -821,30 +947,59 @@ export default function GameDetailPage() {
                 <Card className="border-border">
                   <CardHeader>
                     <CardTitle className="text-lg">클러치 상황 분석</CardTitle>
-                    <CardDescription>득점권 + 2아웃 상황에서의 성과</CardDescription>
+                    <CardDescription>
+                      득점권 + 2아웃 상황에서의 성과
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {/* 홈팀 클러치 */}
                       <Card className="border-red-400 bg-background flex flex-col h-full">
                         <CardHeader className="flex flex-row items-center gap-2 pb-2">
-                          <span className="px-2 py-1 rounded bg-red-400 text-white text-xs font-bold">홈팀</span>
-                          <span className="font-bold text-red-500">{gameData.lineScore.home_full_name}</span>
+                          <span className="px-2 py-1 rounded bg-red-400 text-white text-xs font-bold">
+                            홈팀
+                          </span>
+                          <span className="font-bold text-red-500">
+                            {gameData.lineScore.home_full_name}
+                          </span>
                           {gameData.homeTeamLogo && (
-                            <Image src={gameData.homeTeamLogo} alt="홈팀 로고" width={28} height={28} className="rounded-full border border-red-300 bg-white" />
+                            <Image
+                              src={gameData.homeTeamLogo}
+                              alt="홈팀 로고"
+                              width={28}
+                              height={28}
+                              className="rounded-full border border-red-300 bg-white"
+                            />
                           )}
                         </CardHeader>
                         <CardContent className="flex-1 flex flex-col justify-between pt-0 gap-4">
-                          {[0, 1].map(idx => {
-                            const row = idx === 0 ? clutchRows[0] : clutchRows[1];
+                          {[0, 1].map((idx) => {
+                            const row =
+                              idx === 0 ? clutchRows[0] : clutchRows[1];
                             return (
-                              <div key={idx} className={`rounded-lg p-4 w-full bg-background text-white border border-white/10`}>
-                                <div className="text-base font-bold mb-1">{row.label}</div>
-                                <div className="text-3xl font-bold mb-2">{row.clutch || 0}</div>
+                              <div
+                                key={idx}
+                                className={`rounded-lg p-4 w-full bg-background text-white border border-white/10`}
+                              >
+                                <div className="text-base font-bold mb-1">
+                                  {row.label}
+                                </div>
+                                <div className="text-3xl font-bold mb-2">
+                                  {row.clutch || 0}
+                                </div>
                                 <div className="text-sm mb-1">클러치 타석</div>
-                                <div className="text-lg font-bold">성공: {row.success || 0}</div>
+                                <div className="text-lg font-bold">
+                                  성공: {row.success || 0}
+                                </div>
                                 <div className="text-xs text-white/80">
-                                  성공률: {row.clutch ? ((row.success / row.clutch) * 100).toFixed(1) : "0.0"}%
+                                  성공률:{" "}
+                                  {row.clutch
+                                    ? (
+                                        (row.success / row.clutch) *
+                                        100
+                                      ).toFixed(1)
+                                    : "0.0"}
+                                  %
                                 </div>
                               </div>
                             );
@@ -854,23 +1009,49 @@ export default function GameDetailPage() {
                       {/* 어웨이팀 클러치 */}
                       <Card className="border-blue-400 bg-background flex flex-col h-full">
                         <CardHeader className="flex flex-row items-center gap-2 pb-2">
-                          <span className="px-2 py-1 rounded bg-blue-400 text-white text-xs font-bold">어웨이팀</span>
-                          <span className="font-bold text-blue-500">{gameData.lineScore.away_full_name}</span>
+                          <span className="px-2 py-1 rounded bg-blue-400 text-white text-xs font-bold">
+                            어웨이팀
+                          </span>
+                          <span className="font-bold text-blue-500">
+                            {gameData.lineScore.away_full_name}
+                          </span>
                           {gameData.awayTeamLogo && (
-                            <Image src={gameData.awayTeamLogo} alt="어웨이팀 로고" width={28} height={28} className="rounded-full border border-blue-300 bg-white" />
+                            <Image
+                              src={gameData.awayTeamLogo}
+                              alt="어웨이팀 로고"
+                              width={28}
+                              height={28}
+                              className="rounded-full border border-blue-300 bg-white"
+                            />
                           )}
                         </CardHeader>
                         <CardContent className="flex-1 flex flex-col justify-between pt-0 gap-4">
-                          {[2, 3].map(idx => {
+                          {[2, 3].map((idx) => {
                             const row = clutchRows[idx];
                             return (
-                              <div key={idx} className={`rounded-lg p-4 w-full bg-background text-white border border-white/10`}>
-                                <div className="text-base font-bold mb-1">{row.label}</div>
-                                <div className="text-3xl font-bold mb-2">{row.clutch || 0}</div>
+                              <div
+                                key={idx}
+                                className={`rounded-lg p-4 w-full bg-background text-white border border-white/10`}
+                              >
+                                <div className="text-base font-bold mb-1">
+                                  {row.label}
+                                </div>
+                                <div className="text-3xl font-bold mb-2">
+                                  {row.clutch || 0}
+                                </div>
                                 <div className="text-sm mb-1">클러치 타석</div>
-                                <div className="text-lg font-bold">성공: {row.success || 0}</div>
+                                <div className="text-lg font-bold">
+                                  성공: {row.success || 0}
+                                </div>
                                 <div className="text-xs text-white/80">
-                                  성공률: {row.clutch ? ((row.success / row.clutch) * 100).toFixed(1) : "0.0"}%
+                                  성공률:{" "}
+                                  {row.clutch
+                                    ? (
+                                        (row.success / row.clutch) *
+                                        100
+                                      ).toFixed(1)
+                                    : "0.0"}
+                                  %
                                 </div>
                               </div>
                             );
@@ -892,30 +1073,63 @@ export default function GameDetailPage() {
                     {/* 홈팀 득점 요약 */}
                     <Card className="border-red-400 bg-red-50/10 flex flex-col h-full">
                       <CardHeader className="flex flex-row items-center gap-2 pb-2">
-                        <span className="px-2 py-1 rounded bg-red-400 text-white text-xs font-bold">홈팀</span>
-                        <span className="font-bold text-red-500">{gameData.lineScore.home_full_name}</span>
+                        <span className="px-2 py-1 rounded bg-red-400 text-white text-xs font-bold">
+                          홈팀
+                        </span>
+                        <span className="font-bold text-red-500">
+                          {gameData.lineScore.home_full_name}
+                        </span>
                         {gameData.homeTeamLogo && (
-                          <Image src={gameData.homeTeamLogo} alt="홈팀 로고" width={28} height={28} className="rounded-full border border-red-300 bg-white" />
+                          <Image
+                            src={gameData.homeTeamLogo}
+                            alt="홈팀 로고"
+                            width={28}
+                            height={28}
+                            className="rounded-full border border-red-300 bg-white"
+                          />
                         )}
                       </CardHeader>
                       <CardContent className="flex-1 flex flex-col justify-between pt-0">
                         <ScoringSummary
-                          plays={gameData.home.ownership.totalAtBats.filter(atBat => atBat.rbi && atBat.rbi > 0).map((atBat, index) => ({
-                            id: `home-scoring-${index}`,
-                            inning: atBat.inning,
-                            inningHalf: atBat.isTopInning ? "top" : "bottom",
-                            outs: atBat.outsBefore || 0,
-                            runners: {
-                              first: atBat.runnersBefore && (atBat.runnersBefore["1"] || Object.values(atBat.runnersBefore).find(base => base === 1)) ? "주자" : false,
-                              second: atBat.runnersBefore && (atBat.runnersBefore["2"] || Object.values(atBat.runnersBefore).find(base => base === 2)) ? "주자" : false,
-                              third: atBat.runnersBefore && (atBat.runnersBefore["3"] || Object.values(atBat.runnersBefore).find(base => base === 3)) ? "주자" : false,
-                            },
-                            batter: atBat.batter,
-                            batterOwner: atBat.isHost ? "호스트" : "팀원",
-                            result: atBat.result?.replace("_", " ") ?? "",
-                            runsScored: atBat.rbi ?? 0,
-                            description: atBat.log.join(" "),
-                          }))}
+                          plays={gameData.home.ownership.totalAtBats
+                            .filter((atBat) => atBat.rbi && atBat.rbi > 0)
+                            .map((atBat, index) => ({
+                              id: `home-scoring-${index}`,
+                              inning: atBat.inning,
+                              inningHalf: atBat.isTopInning ? "top" : "bottom",
+                              outs: atBat.outsBefore || 0,
+                              runners: {
+                                first:
+                                  atBat.runnersBefore &&
+                                  (atBat.runnersBefore["1"] ||
+                                    Object.values(atBat.runnersBefore).find(
+                                      (base) => base === 1
+                                    ))
+                                    ? "주자"
+                                    : false,
+                                second:
+                                  atBat.runnersBefore &&
+                                  (atBat.runnersBefore["2"] ||
+                                    Object.values(atBat.runnersBefore).find(
+                                      (base) => base === 2
+                                    ))
+                                    ? "주자"
+                                    : false,
+                                third:
+                                  atBat.runnersBefore &&
+                                  (atBat.runnersBefore["3"] ||
+                                    Object.values(atBat.runnersBefore).find(
+                                      (base) => base === 3
+                                    ))
+                                    ? "주자"
+                                    : false,
+                              },
+                              batter: atBat.batter,
+                              batterOwner: atBat.isHost ? "호스트" : "팀원",
+                              result: atBat.result?.replace("_", " ") ?? "",
+                              runsScored: atBat.rbi ?? 0,
+                              description: atBat.log.join(" "),
+                            }))}
                           allAtBats={gameData.home.ownership.totalAtBats}
                           className=""
                         />
@@ -924,30 +1138,63 @@ export default function GameDetailPage() {
                     {/* 어웨이팀 득점 요약 */}
                     <Card className="border-blue-400 bg-blue-50/10 flex flex-col h-full">
                       <CardHeader className="flex flex-row items-center gap-2 pb-2">
-                        <span className="px-2 py-1 rounded bg-blue-400 text-white text-xs font-bold">어웨이팀</span>
-                        <span className="font-bold text-blue-500">{gameData.lineScore.away_full_name}</span>
+                        <span className="px-2 py-1 rounded bg-blue-400 text-white text-xs font-bold">
+                          어웨이팀
+                        </span>
+                        <span className="font-bold text-blue-500">
+                          {gameData.lineScore.away_full_name}
+                        </span>
                         {gameData.awayTeamLogo && (
-                          <Image src={gameData.awayTeamLogo} alt="어웨이팀 로고" width={28} height={28} className="rounded-full border border-blue-300 bg-white" />
+                          <Image
+                            src={gameData.awayTeamLogo}
+                            alt="어웨이팀 로고"
+                            width={28}
+                            height={28}
+                            className="rounded-full border border-blue-300 bg-white"
+                          />
                         )}
                       </CardHeader>
                       <CardContent className="flex-1 flex flex-col justify-between pt-0">
                         <ScoringSummary
-                          plays={gameData.away.ownership.totalAtBats.filter(atBat => atBat.rbi && atBat.rbi > 0).map((atBat, index) => ({
-                            id: `away-scoring-${index}`,
-                            inning: atBat.inning,
-                            inningHalf: atBat.isTopInning ? "top" : "bottom",
-                            outs: atBat.outsBefore || 0,
-                            runners: {
-                              first: atBat.runnersBefore && (atBat.runnersBefore["1"] || Object.values(atBat.runnersBefore).find(base => base === 1)) ? "주자" : false,
-                              second: atBat.runnersBefore && (atBat.runnersBefore["2"] || Object.values(atBat.runnersBefore).find(base => base === 2)) ? "주자" : false,
-                              third: atBat.runnersBefore && (atBat.runnersBefore["3"] || Object.values(atBat.runnersBefore).find(base => base === 3)) ? "주자" : false,
-                            },
-                            batter: atBat.batter,
-                            batterOwner: atBat.isHost ? "호스트" : "팀원",
-                            result: atBat.result?.replace("_", " ") ?? "",
-                            runsScored: atBat.rbi ?? 0,
-                            description: atBat.log.join(" "),
-                          }))}
+                          plays={gameData.away.ownership.totalAtBats
+                            .filter((atBat) => atBat.rbi && atBat.rbi > 0)
+                            .map((atBat, index) => ({
+                              id: `away-scoring-${index}`,
+                              inning: atBat.inning,
+                              inningHalf: atBat.isTopInning ? "top" : "bottom",
+                              outs: atBat.outsBefore || 0,
+                              runners: {
+                                first:
+                                  atBat.runnersBefore &&
+                                  (atBat.runnersBefore["1"] ||
+                                    Object.values(atBat.runnersBefore).find(
+                                      (base) => base === 1
+                                    ))
+                                    ? "주자"
+                                    : false,
+                                second:
+                                  atBat.runnersBefore &&
+                                  (atBat.runnersBefore["2"] ||
+                                    Object.values(atBat.runnersBefore).find(
+                                      (base) => base === 2
+                                    ))
+                                    ? "주자"
+                                    : false,
+                                third:
+                                  atBat.runnersBefore &&
+                                  (atBat.runnersBefore["3"] ||
+                                    Object.values(atBat.runnersBefore).find(
+                                      (base) => base === 3
+                                    ))
+                                    ? "주자"
+                                    : false,
+                              },
+                              batter: atBat.batter,
+                              batterOwner: atBat.isHost ? "호스트" : "팀원",
+                              result: atBat.result?.replace("_", " ") ?? "",
+                              runsScored: atBat.rbi ?? 0,
+                              description: atBat.log.join(" "),
+                            }))}
                           allAtBats={gameData.away.ownership.totalAtBats}
                           className=""
                         />
@@ -984,12 +1231,12 @@ export default function GameDetailPage() {
                             <Badge
                               variant="outline"
                               className={
-                                atBat.owner === "my"
+                                atBat.isHost
                                   ? "border-teal-500 text-teal-700 dark:text-teal-300"
                                   : "border-rose-500 text-rose-700 dark:text-rose-300"
                               }
                             >
-                              {atBat.owner === "my" ? "나" : "팀원"}
+                              {atBat.isHost ? "호스트" : "팀원"}
                             </Badge>
                             <span className="font-medium">{atBat.batter}</span>
                             <span className="text-sm text-muted-foreground">
@@ -1002,7 +1249,9 @@ export default function GameDetailPage() {
                             </Badge>
 
                             {/* 득점권 상황 */}
-                            {isRunnerInScoringPosition(atBat.runnersBefore ?? {}) && (
+                            {isRunnerInScoringPosition(
+                              atBat.runnersBefore ?? {}
+                            ) && (
                               <Badge
                                 variant="secondary"
                                 className="text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
@@ -1012,7 +1261,9 @@ export default function GameDetailPage() {
                             )}
 
                             {/* 클러치 상황 */}
-                            {isRunnerInScoringPosition(atBat.runnersBefore ?? {}) &&
+                            {isRunnerInScoringPosition(
+                              atBat.runnersBefore ?? {}
+                            ) &&
                               atBat.outsBefore === 2 && (
                                 <Badge
                                   variant="secondary"
