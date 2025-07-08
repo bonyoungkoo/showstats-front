@@ -31,17 +31,17 @@ interface AtBatDetail {
 }
 
 export type AtBatResult =
-  | 'single'
-  | 'double'
-  | 'triple'
-  | 'home_run'
-  | 'walk'
-  | 'strikeout'
-  | 'out'
-  | 'sacrifice out'
-  | 'sacrifice fly out'
-  | 'error'
-  | 'unknown';
+  | "single"
+  | "double"
+  | "triple"
+  | "home_run"
+  | "walk"
+  | "strikeout"
+  | "out"
+  | "sacrifice out"
+  | "sacrifice fly out"
+  | "error"
+  | "unknown";
 export interface AtBatEvent {
   batter: string;
   result?: AtBatResult;
@@ -50,11 +50,15 @@ export interface AtBatEvent {
   risp?: boolean;
   runnersBefore?: Record<string, number>;
   outsBefore?: number; // 타석 시작 전 아웃카운트
+  totalScore?: {
+    away?: string;
+    home?: string;
+  };
   inning: number;
   isTopInning: boolean;
   log: string[];
-  owner?: 'my' | 'friend'; // 호환성을 위해 유지 (deprecated)
-  team?: 'home' | 'away'; // 홈팀/원정팀 구분
+  owner?: "my" | "friend"; // 호환성을 위해 유지 (deprecated)
+  team?: "home" | "away"; // 홈팀/원정팀 구분
   teamName?: string; // 팀 이름 (예: "Los Angeles Angels")
   isHost?: boolean;
 }
@@ -182,18 +186,21 @@ export interface AnalyzeGameResult {
 
 async function fetchGameAnalysis(
   username: string,
-  gameId: string,
+  gameId: string
 ): Promise<AnalyzeGameResult> {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/analyze`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      username,
-      gameId,
-    }),
-  });
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/api/analyze`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username,
+        gameId,
+      }),
+    }
+  );
 
   if (!response.ok) {
     throw new Error(

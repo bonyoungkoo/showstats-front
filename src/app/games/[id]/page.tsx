@@ -86,28 +86,44 @@ export default function GameDetailPage() {
     );
   };
 
+  const isClutchScore = (a: number, b: number) => {
+    return Math.abs(a - b) <= 3;
+  };
+
   // 홈팀 클러치 타석/성공
   const homeHostClutchAtBats = gameData.home.ownership.hostAtBats.filter(
     (atBat) =>
       isRunnerInScoringPosition(atBat.runnersBefore ?? {}) &&
-      atBat.outsBefore === 2
+      isClutchScore(
+        Number(atBat.totalScore?.away ?? 0),
+        Number(atBat.totalScore?.home ?? 0)
+      )
   );
   const homeTeammateClutchAtBats =
     gameData.home.ownership.teammateAtBats.filter(
       (atBat) =>
         isRunnerInScoringPosition(atBat.runnersBefore ?? {}) &&
-        atBat.outsBefore === 2
+        isClutchScore(
+          Number(atBat.totalScore?.away ?? 0),
+          Number(atBat.totalScore?.home ?? 0)
+        )
     );
   const awayHostClutchAtBats = gameData.away.ownership.hostAtBats.filter(
     (atBat) =>
       isRunnerInScoringPosition(atBat.runnersBefore ?? {}) &&
-      atBat.outsBefore === 2
+      isClutchScore(
+        Number(atBat.totalScore?.away ?? 0),
+        Number(atBat.totalScore?.home ?? 0)
+      )
   );
   const awayTeammateClutchAtBats =
     gameData.away.ownership.teammateAtBats.filter(
       (atBat) =>
         isRunnerInScoringPosition(atBat.runnersBefore ?? {}) &&
-        atBat.outsBefore === 2
+        isClutchScore(
+          Number(atBat.totalScore?.away ?? 0),
+          Number(atBat.totalScore?.home ?? 0)
+        )
     );
 
   const clutchRows = [
@@ -947,9 +963,7 @@ export default function GameDetailPage() {
                 <Card className="border-border">
                   <CardHeader>
                     <CardTitle className="text-lg">클러치 상황 분석</CardTitle>
-                    <CardDescription>
-                      득점권 + 2아웃 상황에서의 성과
-                    </CardDescription>
+                    <CardDescription>득점권 상황에서의 성과</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1218,8 +1232,48 @@ export default function GameDetailPage() {
                 <CardContent>
                   <Tabs defaultValue="details-home" className="w-full">
                     <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="details-home">홈 팀</TabsTrigger>
-                      <TabsTrigger value="details-away">어웨이 팀</TabsTrigger>
+                      <TabsTrigger
+                        value="details-home"
+                        className="data-[state=inactive]:opacity-60 data-[state=inactive]:grayscale data-[state=inactive]:text-muted-foreground"
+                      >
+                        <Badge className="bg-red-500 text-white border-red-500 mr-1">
+                          홈팀
+                        </Badge>
+                        <span className="font-semibold text-red-400 mr-1">
+                          {gameData.lineScore.home_full_name}
+                        </span>
+                        {gameData.homeTeamLogo && (
+                          <Image
+                            src={gameData.homeTeamLogo}
+                            alt="홈팀로고"
+                            width={22}
+                            height={22}
+                            className="inline-block rounded-full align-middle border border-red-300 bg-white"
+                            style={{ marginLeft: 2 }}
+                          />
+                        )}
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="details-away"
+                        className="data-[state=inactive]:opacity-60 data-[state=inactive]:grayscale data-[state=inactive]:text-muted-foreground"
+                      >
+                        <Badge className="bg-blue-500 text-white border-blue-500 mr-1">
+                          어웨이팀
+                        </Badge>
+                        <span className="font-semibold text-blue-400 mr-1">
+                          {gameData.lineScore.away_full_name}
+                        </span>
+                        {gameData.awayTeamLogo && (
+                          <Image
+                            src={gameData.awayTeamLogo}
+                            alt="어웨이팀로고"
+                            width={22}
+                            height={22}
+                            className="inline-block rounded-full align-middle border border-blue-300 bg-white"
+                            style={{ marginLeft: 2 }}
+                          />
+                        )}
+                      </TabsTrigger>
                     </TabsList>
                     <TabsContent value="details-home" className="space-y-6">
                       <div className="space-y-4">
@@ -1253,6 +1307,13 @@ export default function GameDetailPage() {
                                       {atBat.inning}회{" "}
                                       {atBat.isTopInning ? "초" : "말"}
                                     </span>
+                                    {/* 현재 스코어 표시 */}
+                                    {atBat.totalScore && (
+                                      <span className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground font-mono font-semibold border border-border mx-1">
+                                        {atBat.totalScore.away ?? 0} -{" "}
+                                        {atBat.totalScore.home ?? 0}
+                                      </span>
+                                    )}
                                     <Badge
                                       variant="outline"
                                       className="text-xs"
@@ -1276,7 +1337,10 @@ export default function GameDetailPage() {
                                     {isRunnerInScoringPosition(
                                       atBat.runnersBefore ?? {}
                                     ) &&
-                                      atBat.outsBefore === 2 && (
+                                      isClutchScore(
+                                        Number(atBat.totalScore?.home ?? 0),
+                                        Number(atBat.totalScore?.away ?? 0)
+                                      ) && (
                                         <Badge
                                           variant="secondary"
                                           className="text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
@@ -1284,17 +1348,37 @@ export default function GameDetailPage() {
                                           클러치
                                         </Badge>
                                       )}
+                                    {/* 타점 상황 뱃지 */}
+                                    {atBat.rbi && atBat.rbi > 0 ? (
+                                      <>
+                                        {String(atBat.result)
+                                          .toLowerCase()
+                                          .includes("out") ? (
+                                          <Badge className="text-xs h-6 py-0.5 bg-cyan-950/50 text-cyan-300">
+                                            팀배팅
+                                          </Badge>
+                                        ) : String(atBat.result)
+                                            .toLowerCase()
+                                            .includes("home_run") ? (
+                                          <Badge className="text-xs h-6 py-0.5 bg-indigo-950/60 text-indigo-300">
+                                            홈런
+                                          </Badge>
+                                        ) : (
+                                          <Badge className="text-xs h-6 py-0.5 bg-yellow-950/40 text-yellow-200">
+                                            적시타
+                                          </Badge>
+                                        )}
+                                        <Badge className="text-xs h-6 py-0.5 bg-green-950/50 text-green-300">
+                                          {atBat.rbi}타점
+                                        </Badge>
+                                      </>
+                                    ) : null}
                                   </div>
                                 </div>
                                 <div className="text-right">
                                   <div className="font-medium capitalize">
                                     {atBat.result?.replace("_", " ")}
                                   </div>
-                                  {atBat.rbi && atBat.rbi > 0 && (
-                                    <div className="text-sm text-green-600 dark:text-green-400">
-                                      {atBat.rbi} RBI
-                                    </div>
-                                  )}
                                 </div>
                               </div>
 
@@ -1357,6 +1441,13 @@ export default function GameDetailPage() {
                                       {atBat.inning}회{" "}
                                       {atBat.isTopInning ? "초" : "말"}
                                     </span>
+                                    {/* 현재 스코어 표시 */}
+                                    {atBat.totalScore && (
+                                      <span className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground font-mono font-semibold border border-border mx-1">
+                                        {atBat.totalScore.away ?? 0} -{" "}
+                                        {atBat.totalScore.home ?? 0}
+                                      </span>
+                                    )}
                                     <Badge
                                       variant="outline"
                                       className="text-xs"
@@ -1380,7 +1471,10 @@ export default function GameDetailPage() {
                                     {isRunnerInScoringPosition(
                                       atBat.runnersBefore ?? {}
                                     ) &&
-                                      atBat.outsBefore === 2 && (
+                                      isClutchScore(
+                                        Number(atBat.totalScore?.home ?? 0),
+                                        Number(atBat.totalScore?.away ?? 0)
+                                      ) && (
                                         <Badge
                                           variant="secondary"
                                           className="text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
@@ -1388,17 +1482,31 @@ export default function GameDetailPage() {
                                           클러치
                                         </Badge>
                                       )}
+                                    {/* 타점 상황 뱃지 */}
+                                    {atBat.rbi && atBat.rbi > 0 ? (
+                                      <>
+                                        {String(atBat.result)
+                                          .toLowerCase()
+                                          .includes("home run") ? (
+                                          <Badge className="text-xs h-6 py-0.5 bg-indigo-900/20 text-indigo-300 font-semibold">
+                                            홈런
+                                          </Badge>
+                                        ) : (
+                                          <Badge className="text-xs h-6 py-0.5 bg-yellow-900/20 text-yellow-300 font-semibold">
+                                            적시타
+                                          </Badge>
+                                        )}
+                                        <Badge className="text-xs h-6 py-0.5 bg-green-900/20 text-green-300 font-semibold">
+                                          {atBat.rbi}타점
+                                        </Badge>
+                                      </>
+                                    ) : null}
                                   </div>
                                 </div>
                                 <div className="text-right">
                                   <div className="font-medium capitalize">
                                     {atBat.result?.replace("_", " ")}
                                   </div>
-                                  {atBat.rbi && atBat.rbi > 0 && (
-                                    <div className="text-sm text-green-600 dark:text-green-400">
-                                      {atBat.rbi} RBI
-                                    </div>
-                                  )}
                                 </div>
                               </div>
 
