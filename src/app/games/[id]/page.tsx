@@ -1216,98 +1216,219 @@ export default function GameDetailPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {gameData.home.ownership.totalAtBats.map((atBat, index) => (
-                      <div
-                        key={index}
-                        className={`p-4 rounded-lg border ${
-                          atBat.owner === "my"
-                            ? "bg-teal-50/50 border-teal-200 dark:bg-teal-950/20 dark:border-teal-800"
-                            : "bg-rose-50/50 border-rose-200 dark:bg-rose-950/20 dark:border-rose-800"
-                        }`}
-                      >
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Badge
-                              variant="outline"
-                              className={
+                  <Tabs defaultValue="details-home" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="details-home">홈 팀</TabsTrigger>
+                      <TabsTrigger value="details-away">어웨이 팀</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="details-home" className="space-y-6">
+                      <div className="space-y-4">
+                        {gameData.home.ownership.totalAtBats.map(
+                          (atBat, index) => (
+                            <div
+                              key={index}
+                              className={`p-4 rounded-lg border ${
                                 atBat.isHost
-                                  ? "border-teal-500 text-teal-700 dark:text-teal-300"
-                                  : "border-rose-500 text-rose-700 dark:text-rose-300"
-                              }
+                                  ? "bg-teal-50/50 border-teal-200 dark:bg-teal-950/20 dark:border-teal-800"
+                                  : "bg-rose-50/50 border-rose-200 dark:bg-rose-950/20 dark:border-rose-800"
+                              }`}
                             >
-                              {atBat.isHost ? "호스트" : "팀원"}
-                            </Badge>
-                            <span className="font-medium">{atBat.batter}</span>
-                            <span className="text-sm text-muted-foreground">
-                              {atBat.inning}회 {atBat.isTopInning ? "초" : "말"}
-                            </span>
-
-                            {/* 아웃카운트 */}
-                            <Badge variant="outline" className="text-xs">
-                              {atBat.outsBefore || 0}아웃
-                            </Badge>
-
-                            {/* 득점권 상황 */}
-                            {isRunnerInScoringPosition(
-                              atBat.runnersBefore ?? {}
-                            ) && (
-                              <Badge
-                                variant="secondary"
-                                className="text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-                              >
-                                득점권
-                              </Badge>
-                            )}
-
-                            {/* 클러치 상황 */}
-                            {isRunnerInScoringPosition(
-                              atBat.runnersBefore ?? {}
-                            ) &&
-                              atBat.outsBefore === 2 && (
-                                <Badge
-                                  variant="secondary"
-                                  className="text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                                >
-                                  클러치
-                                </Badge>
-                              )}
-                          </div>
-                          <div className="text-right">
-                            <div className="font-medium capitalize">
-                              {atBat.result?.replace("_", " ")}
-                            </div>
-                            {atBat.rbi && atBat.rbi > 0 && (
-                              <div className="text-sm text-green-600 dark:text-green-400">
-                                {atBat.rbi} RBI
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 flex-wrap">
+                                  <div className="flex flex-row flex-wrap gap-1 md:gap-2 items-center">
+                                    <Badge
+                                      variant="outline"
+                                      className={
+                                        atBat.isHost
+                                          ? "border-teal-500 text-teal-700 dark:text-teal-300"
+                                          : "border-rose-500 text-rose-700 dark:text-rose-300"
+                                      }
+                                    >
+                                      {atBat.isHost ? "호스트" : "팀원"}
+                                    </Badge>
+                                    <span className="font-medium">
+                                      {atBat.batter}
+                                    </span>
+                                    <span className="text-sm text-muted-foreground">
+                                      {atBat.inning}회{" "}
+                                      {atBat.isTopInning ? "초" : "말"}
+                                    </span>
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs"
+                                    >
+                                      {atBat.outsBefore || 0}아웃
+                                    </Badge>
+                                  </div>
+                                  <div className="flex flex-row flex-wrap gap-1 md:gap-2 items-center">
+                                    {/* 득점권 상황 */}
+                                    {isRunnerInScoringPosition(
+                                      atBat.runnersBefore ?? {}
+                                    ) && (
+                                      <Badge
+                                        variant="secondary"
+                                        className="text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                                      >
+                                        득점권
+                                      </Badge>
+                                    )}
+                                    {/* 클러치 상황 */}
+                                    {isRunnerInScoringPosition(
+                                      atBat.runnersBefore ?? {}
+                                    ) &&
+                                      atBat.outsBefore === 2 && (
+                                        <Badge
+                                          variant="secondary"
+                                          className="text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                                        >
+                                          클러치
+                                        </Badge>
+                                      )}
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="font-medium capitalize">
+                                    {atBat.result?.replace("_", " ")}
+                                  </div>
+                                  {atBat.rbi && atBat.rbi > 0 && (
+                                    <div className="text-sm text-green-600 dark:text-green-400">
+                                      {atBat.rbi} RBI
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                            )}
-                          </div>
-                        </div>
 
-                        {/* 주자 상황 표시 */}
-                        {Object.keys(atBat.runnersBefore ?? {}).length > 0 && (
-                          <div className="mb-2 p-2 bg-muted/30 rounded text-xs">
-                            <span className="text-muted-foreground">
-                              주자 상황:{" "}
-                            </span>
-                            {Object.entries(atBat.runnersBefore ?? {}).map(
-                              ([player, base]) => (
-                                <span key={player} className="mr-2">
-                                  {base}루 {player}
-                                </span>
-                              )
-                            )}
-                          </div>
+                              {/* 주자 상황 표시 */}
+                              {Object.keys(atBat.runnersBefore ?? {}).length >
+                                0 && (
+                                <div className="mb-2 p-2 bg-muted/30 rounded text-xs">
+                                  <span className="text-muted-foreground">
+                                    주자 상황:{" "}
+                                  </span>
+                                  {Object.entries(
+                                    atBat.runnersBefore ?? {}
+                                  ).map(([player, base]) => (
+                                    <span key={player} className="mr-2">
+                                      {base}루 {player}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                              <div className="text-sm text-muted-foreground">
+                                {atBat.log.map((logEntry, logIndex) => (
+                                  <div key={logIndex}>{logEntry}</div>
+                                ))}
+                              </div>
+                            </div>
+                          )
                         )}
-                        <div className="text-sm text-muted-foreground">
-                          {atBat.log.map((logEntry, logIndex) => (
-                            <div key={logIndex}>{logEntry}</div>
-                          ))}
-                        </div>
                       </div>
-                    ))}
-                  </div>
+                    </TabsContent>
+
+                    <TabsContent value="details-away" className="space-y-6">
+                      <div className="space-y-4">
+                        {gameData.away.ownership.totalAtBats.map(
+                          (atBat, index) => (
+                            <div
+                              key={index}
+                              className={`p-4 rounded-lg border ${
+                                atBat.isHost
+                                  ? "bg-teal-50/50 border-teal-200 dark:bg-teal-950/20 dark:border-teal-800"
+                                  : "bg-rose-50/50 border-rose-200 dark:bg-rose-950/20 dark:border-rose-800"
+                              }`}
+                            >
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 flex-wrap">
+                                  <div className="flex flex-row flex-wrap gap-1 md:gap-2 items-center">
+                                    <Badge
+                                      variant="outline"
+                                      className={
+                                        atBat.isHost
+                                          ? "border-teal-500 text-teal-700 dark:text-teal-300"
+                                          : "border-rose-500 text-rose-700 dark:text-rose-300"
+                                      }
+                                    >
+                                      {atBat.isHost ? "호스트" : "팀원"}
+                                    </Badge>
+                                    <span className="font-medium">
+                                      {atBat.batter}
+                                    </span>
+                                    <span className="text-sm text-muted-foreground">
+                                      {atBat.inning}회{" "}
+                                      {atBat.isTopInning ? "초" : "말"}
+                                    </span>
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs"
+                                    >
+                                      {atBat.outsBefore || 0}아웃
+                                    </Badge>
+                                  </div>
+                                  <div className="flex flex-row flex-wrap gap-1 md:gap-2 items-center">
+                                    {/* 득점권 상황 */}
+                                    {isRunnerInScoringPosition(
+                                      atBat.runnersBefore ?? {}
+                                    ) && (
+                                      <Badge
+                                        variant="secondary"
+                                        className="text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                                      >
+                                        득점권
+                                      </Badge>
+                                    )}
+                                    {/* 클러치 상황 */}
+                                    {isRunnerInScoringPosition(
+                                      atBat.runnersBefore ?? {}
+                                    ) &&
+                                      atBat.outsBefore === 2 && (
+                                        <Badge
+                                          variant="secondary"
+                                          className="text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                                        >
+                                          클러치
+                                        </Badge>
+                                      )}
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="font-medium capitalize">
+                                    {atBat.result?.replace("_", " ")}
+                                  </div>
+                                  {atBat.rbi && atBat.rbi > 0 && (
+                                    <div className="text-sm text-green-600 dark:text-green-400">
+                                      {atBat.rbi} RBI
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* 주자 상황 표시 */}
+                              {Object.keys(atBat.runnersBefore ?? {}).length >
+                                0 && (
+                                <div className="mb-2 p-2 bg-muted/30 rounded text-xs">
+                                  <span className="text-muted-foreground">
+                                    주자 상황:{" "}
+                                  </span>
+                                  {Object.entries(
+                                    atBat.runnersBefore ?? {}
+                                  ).map(([player, base]) => (
+                                    <span key={player} className="mr-2">
+                                      {base}루 {player}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                              <div className="text-sm text-muted-foreground">
+                                {atBat.log.map((logEntry, logIndex) => (
+                                  <div key={logIndex}>{logEntry}</div>
+                                ))}
+                              </div>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </TabsContent>
+                  </Tabs>
                 </CardContent>
               </Card>
             </TabsContent>
