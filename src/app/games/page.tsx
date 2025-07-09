@@ -324,9 +324,9 @@ function GamesPageContent() {
               <TableRow>
                 <TableHead>날짜/시간</TableHead>
                 <TableHead>모드</TableHead>
-                <TableHead>어웨이</TableHead>
-                <TableHead>스코어</TableHead>
-                <TableHead>홈</TableHead>
+                <TableHead className="text-right">어웨이</TableHead>
+                <TableHead className="text-center">스코어</TableHead>
+                <TableHead className="text-left">홈</TableHead>
                 <TableHead>결과</TableHead>
               </TableRow>
             </TableHeader>
