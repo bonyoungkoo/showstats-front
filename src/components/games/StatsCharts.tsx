@@ -24,8 +24,6 @@ export default function StatsCharts({ gameData, userStats }: StatsChartsProps) {
   const totalGames = wins + losses;
   const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
 
-  console.log('userStats', userStats)
-
   // 게임 데이터가 없으면 기본 데이터 사용
   const hasGameData = totalGames > 0;
 
@@ -38,7 +36,9 @@ export default function StatsCharts({ gameData, userStats }: StatsChartsProps) {
     : [{ name: "데이터 없음", value: 1, color: "#6b7280" }];
 
   // 유저 API 데이터에서 통계 가져오기 (있는 경우)
-  const totalSeasonData = userStats?.online_data?.find((data) => data.year === "Total");
+  const totalSeasonData = userStats?.online_data?.find(
+    (data) => data.year === "Total"
+  );
 
   // 막대 그래프 데이터 (타율, 평균자책점만)
   const battingAvg = totalSeasonData

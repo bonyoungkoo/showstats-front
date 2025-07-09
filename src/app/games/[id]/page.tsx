@@ -1236,9 +1236,6 @@ export default function GameDetailPage() {
                         value="details-home"
                         className="data-[state=inactive]:opacity-60 data-[state=inactive]:grayscale data-[state=inactive]:text-muted-foreground"
                       >
-                        <Badge className="bg-red-500 text-white border-red-500 mr-1">
-                          홈팀
-                        </Badge>
                         <span className="font-semibold text-red-400 mr-1">
                           {gameData.lineScore.home_full_name}
                         </span>
@@ -1257,9 +1254,6 @@ export default function GameDetailPage() {
                         value="details-away"
                         className="data-[state=inactive]:opacity-60 data-[state=inactive]:grayscale data-[state=inactive]:text-muted-foreground"
                       >
-                        <Badge className="bg-blue-500 text-white border-blue-500 mr-1">
-                          어웨이팀
-                        </Badge>
                         <span className="font-semibold text-blue-400 mr-1">
                           {gameData.lineScore.away_full_name}
                         </span>

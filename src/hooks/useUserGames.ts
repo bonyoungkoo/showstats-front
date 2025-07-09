@@ -31,18 +31,23 @@ interface ApiGameHistoryItem {
 
 interface ApiResponse {
   game_history?: ApiGameHistoryItem[];
+  total_pages?: number;
+  page?: number;
 }
 
 async function fetchUserGames(username: string): Promise<UserGamesResponse> {
   const params = new URLSearchParams();
   params.set("username", username);
 
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/games/history?${params.toString()}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/api/games/history?${params.toString()}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
 
   if (!response.ok) {
     throw new Error(`게임 목록을 불러오는데 실패했습니다: ${response.status}`);

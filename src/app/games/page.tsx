@@ -6,9 +6,10 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { useRecentSearches } from "@/hooks/useRecentSearches";
 import UserProfile from "@/components/games/UserProfile";
 import StatsCharts from "@/components/games/StatsCharts";
-import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { useRouter } from "next/navigation";
+import { useEffect, Suspense, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -17,75 +18,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useRouter } from "next/navigation";
-import { useEffect, Suspense, useState, useCallback } from "react";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Loader2 } from "lucide-react";
 
-// 게임 모드 뱃지 컴포넌트
-interface GameModeBadgeProps {
-  game: {
-    gameId: string;
-    isSingleGame: boolean;
-  };
-  teammateUsername: string;
-  modeResult?: boolean; // 병렬 처리된 2:2 체크 결과
-  isLoading: boolean; // 로딩 상태
-}
-
-function GameModeBadge({
-  game,
-  teammateUsername,
-  modeResult,
-  isLoading,
-}: GameModeBadgeProps) {
-  // isSingleGame이 true면 무조건 CPU (싱글게임)
-  if (game.isSingleGame) {
-    return (
-      <Badge className="bg-slate-600 hover:bg-slate-700 text-white border-slate-600 w-14 justify-center">
-        CPU
-      </Badge>
-    );
-  }
-
-  // isSingleGame이 false이고 teammateUsername이 없으면 PvP
-  if (!teammateUsername) {
-    return (
-      <Badge className="bg-indigo-500 hover:bg-indigo-600 text-white border-indigo-500 w-14 justify-center">
-        PvP
-      </Badge>
-    );
-  }
-
-  // isSingleGame이 false인 경우 확인중 → 1:1/2:2 결과 표시
-  if (isLoading) {
-    return (
-      <Badge
-        variant="outline"
-        className="border-zinc-400 text-zinc-500 animate-pulse w-16 justify-center"
-      >
-        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-        확인중
-      </Badge>
-    );
-  }
-
-  // 결과에 따라 색상 구분
-  if (modeResult) {
-    // 2:2 - 로즈핑크
-    return (
-      <Badge className="bg-rose-500 hover:bg-rose-600 text-white border-rose-500 w-14 justify-center">
-        2:2
-      </Badge>
-    );
-  } else {
-    // 1:1 - 하늘색
-    return (
-      <Badge className="bg-sky-500 hover:bg-sky-600 text-white border-sky-500 w-14 justify-center">
-        1:1
-      </Badge>
-    );
-  }
-}
+// ApiGameHistoryItem 타입 정의 (혹은 import)
+type ApiGameHistoryItem = {
+  id: string;
+  display_date?: string;
+  display_pitcher_info?: string;
+  home_full_name: string;
+  away_full_name: string;
+  home_runs: string;
+  away_runs: string;
+  isSingleGame?: boolean;
+  // ...필요시 추가 필드...
+};
 
 function GamesPageContent() {
   const router = useRouter();
@@ -93,14 +40,44 @@ function GamesPageContent() {
   const username = searchParams.get("username") || "";
   const teammateUsername = searchParams.get("teammateUsername") || "";
   const teamName = searchParams.get("teamName") || "";
-
   const { addSearch } = useRecentSearches();
+  const [page, setPage] = useState<number>(1);
+  const [games, setGames] = useState<
+    (GameListItem & { display_date?: string; display_pitcher_info?: string })[]
+  >([]);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
 
-  // 게임 모드 체크 결과를 저장할 상태
-  const [gameModeResults, setGameModeResults] = useState<
-    Record<string, boolean>
-  >({});
-  const [loadingGameIds, setLoadingGameIds] = useState<Set<string>>(new Set());
+  // 최초 로딩 및 페이지 변경 시 데이터 fetch
+  useEffect(() => {
+    let ignore = false;
+    async function fetchGames() {
+      try {
+        if (!username) return; // username 없으면 fetch 실행 안 함
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/games/history?username=${username}&page=1`
+        );
+        const data = await res.json();
+        if (!ignore) {
+          setGames(
+            (data.game_history || []).map((g: ApiGameHistoryItem) => ({
+              ...g,
+              gameId: g.id,
+            }))
+          );
+          setTotalPages(data.total_pages || 1);
+          setPage(data.page || 1);
+        }
+      } catch (e) {
+        console.log(e);
+      } finally {
+      }
+    }
+    fetchGames();
+    return () => {
+      ignore = true;
+    };
+  }, [username]);
 
   // 최종 팀이름 상태 (유추된 값 포함)
   const [finalTeamName, setFinalTeamName] = useState<string>(teamName || "");
@@ -120,79 +97,12 @@ function GamesPageContent() {
   // 검색시 최근 검색 기록에 추가
   useEffect(() => {
     if (username) {
-      addSearch(username, userProfile?.playerInfo.universal_profiles[0].username);
+      addSearch(
+        username,
+        userProfile?.playerInfo.universal_profiles[0].username
+      );
     }
   }, [username, addSearch, userProfile?.playerInfo.universal_profiles]);
-
-  // 게임 모드 체크를 위한 병렬 API 호출
-  const checkGameModes = useCallback(
-    async (games: GameListItem[]) => {
-      if (!teammateUsername) return;
-
-      // isSingleGame이 false인 게임들만 필터링
-      const gamesToCheck = games.filter((game) => !game.isSingleGame);
-
-      if (gamesToCheck.length === 0) return;
-
-      console.log(
-        "🔄 병렬 2:2 체크 시작:",
-        gamesToCheck.map((g) => g.gameId)
-      );
-
-      // 로딩 상태 설정
-      setLoadingGameIds(new Set(gamesToCheck.map((g) => g.gameId)));
-
-      // 병렬 API 호출
-      const requests = gamesToCheck.map((game) =>
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/games/check-type`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            gameId: game.gameId,
-            teammateUsername,
-          }),
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            console.log("🟢 도착한 응답:", data);
-            // 응답이 오는 대로 상태 업데이트
-            setGameModeResults((prev) => ({
-              ...prev,
-              [game.gameId]: data.isTeamGame,
-            }));
-            // 로딩 상태에서 제거
-            setLoadingGameIds((prev) => {
-              const newSet = new Set(prev);
-              newSet.delete(game.gameId);
-              return newSet;
-            });
-            return data;
-          })
-          .catch((error) => {
-            console.error("❌ API 호출 실패:", game.gameId, error);
-            // 에러가 발생해도 로딩 상태에서 제거
-            setLoadingGameIds((prev) => {
-              const newSet = new Set(prev);
-              newSet.delete(game.gameId);
-              return newSet;
-            });
-          })
-      );
-
-      // 모든 요청 완료를 기다리지 않고 병렬로 처리
-      Promise.allSettled(requests);
-    },
-    [teammateUsername]
-  );
-
-  // 게임 목록이 로드되면 모드 체크 실행
-  useEffect(() => {
-    if (gamesData?.games && teammateUsername) {
-      checkGameModes(gamesData.games);
-    }
-  }, [gamesData?.games, teammateUsername, checkGameModes]);
 
   // 게임 데이터가 로드되면 최종 팀이름 상태 업데이트
   useEffect(() => {
@@ -288,7 +198,36 @@ function GamesPageContent() {
     );
   }
 
-  const games = gamesData?.games || [];
+  // 다음 페이지 로딩
+  const loadMore = async () => {
+    if (loadingMore || page >= totalPages) return;
+    setLoadingMore(true);
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/games/history?username=${username}&page=${page + 1}`
+      );
+      const data = await res.json();
+      const newGames = ((data.game_history as ApiGameHistoryItem[]) || []).map(
+        (g) => ({
+          ...g,
+          gameId: g.id,
+          created_at: g.display_date || new Date().toISOString(),
+          isSingleGame: g.isSingleGame ?? false,
+        })
+      );
+      setGames((prev) => {
+        const prevIds = new Set(prev.map((g) => g.gameId));
+        const uniqueNewGames = newGames.filter((g) => !prevIds.has(g.gameId));
+        return [...prev, ...uniqueNewGames];
+      });
+      setPage(data.page || page + 1);
+      setTotalPages(data.total_pages || totalPages);
+    } catch (e) {
+      console.log(e);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
@@ -380,145 +319,98 @@ function GamesPageContent() {
               경기를 클릭하면 상세 분석을 확인할 수 있습니다
             </p>
           </div>
-
-          {games.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground mb-4">
-                게임 기록이 없습니다.
-              </p>
-              <Button onClick={() => router.push("/")}>
-                다른 사용자 검색하기
-              </Button>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="border-border">
-                  <TableHead>날짜/시간</TableHead>
-                  <TableHead>모드</TableHead>
-                  <TableHead>매치업</TableHead>
-                  <TableHead>스코어</TableHead>
-                  <TableHead>결과</TableHead>
-                  {/* <TableHead>나의 기록</TableHead> */}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {games.map((game) => (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>날짜/시간</TableHead>
+                <TableHead>모드</TableHead>
+                <TableHead>어웨이</TableHead>
+                <TableHead>스코어</TableHead>
+                <TableHead>홈</TableHead>
+                <TableHead>결과</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {games.map((game) => {
+                const homeScore = parseInt(game.home_runs);
+                const awayScore = parseInt(game.away_runs);
+                const userTeam = finalTeamName;
+                const isUserHomeTeam = game.home_full_name === userTeam;
+                const isUserAwayTeam = game.away_full_name === userTeam;
+                let isUserWin;
+                if (isUserHomeTeam) {
+                  isUserWin = homeScore > awayScore;
+                } else if (isUserAwayTeam) {
+                  isUserWin = awayScore > homeScore;
+                } else {
+                  isUserWin = homeScore > awayScore;
+                }
+                return (
                   <TableRow
                     key={game.gameId}
-                    className="border-border hover:bg-muted/30 cursor-pointer transition-colors"
+                    className="cursor-pointer hover:bg-muted/30"
                     onClick={() => handleGameDetail(game.gameId)}
                   >
                     <TableCell>
-                      <div className="text-sm">
-                        <div className="font-medium">
-                          {new Date(game.created_at).toLocaleDateString(
-                            "ko-KR",
-                            {
-                              timeZone: "Asia/Seoul",
-                              year: "numeric",
-                              month: "2-digit",
-                              day: "2-digit",
-                            }
-                          )}
-                        </div>
-                        <div className="text-muted-foreground">
-                          {new Date(game.created_at).toLocaleTimeString(
-                            "ko-KR",
-                            {
-                              timeZone: "Asia/Seoul",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                              hour12: false,
-                            }
-                          )}
-                        </div>
+                      <div className="font-medium">
+                        {game.display_date?.split(" ")[0]?.replaceAll("/", ".")}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {game.display_date?.split(" ")[1]}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <GameModeBadge
-                        game={game}
-                        teammateUsername={teammateUsername}
-                        modeResult={gameModeResults[game.gameId]}
-                        isLoading={loadingGameIds.has(game.gameId)}
-                      />
+                      <Badge
+                        variant="secondary"
+                        className="bg-indigo-500/80 text-white"
+                      >
+                        PvP
+                      </Badge>
                     </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <div className="font-medium">{game.home_full_name}</div>
-                        <div className="text-muted-foreground text-xs">
-                          vs {game.away_full_name}
-                        </div>
-                      </div>
+                    <TableCell className="text-right">
+                      <span className="font-bold">{game.away_full_name}</span>
                     </TableCell>
-                    <TableCell>
-                      <span className="text-primary font-semibold text-lg">
-                        {game.home_runs}:{game.away_runs}
+                    <TableCell className="text-center">
+                      <span className="font-bold">
+                        <span className="text-primary text-lg">
+                          {game.away_runs}
+                        </span>
+                        <span className="mx-1">:</span>
+                        <span className="text-primary text-lg">
+                          {game.home_runs}
+                        </span>
                       </span>
                     </TableCell>
-                    <TableCell>
-                      {(() => {
-                        const homeScore = parseInt(game.home_runs);
-                        const awayScore = parseInt(game.away_runs);
-
-                        // 사용자의 팀이 홈팀인지 어웨이팀인지 확인
-                        const userTeam = finalTeamName;
-                        const isUserHomeTeam = game.home_full_name === userTeam;
-                        const isUserAwayTeam = game.away_full_name === userTeam;
-
-                        // 디버깅용 로그
-                        console.log(
-                          "Game:",
-                          game.home_full_name,
-                          "vs",
-                          game.away_full_name
-                        );
-                        console.log("User team:", userTeam);
-                        console.log(
-                          "Is home team:",
-                          isUserHomeTeam,
-                          "Is away team:",
-                          isUserAwayTeam
-                        );
-
-                        let isUserWin;
-                        if (isUserHomeTeam) {
-                          isUserWin = homeScore > awayScore;
-                        } else if (isUserAwayTeam) {
-                          isUserWin = awayScore > homeScore;
-                        } else {
-                          // 팀을 찾을 수 없으면 홈팀 기준으로 계산
-                          isUserWin = homeScore > awayScore;
-                        }
-
-                        return (
-                          <Badge
-                            variant={isUserWin ? "default" : "destructive"}
-                            className={
-                              isUserWin ? "bg-green-600 hover:bg-green-700" : ""
-                            }
-                          >
-                            {isUserWin ? "승리" : "패배"}
-                          </Badge>
-                        );
-                      })()}
+                    <TableCell className="text-left">
+                      <span className="font-bold">{game.home_full_name}</span>
                     </TableCell>
-                    {/* <TableCell>
-                      <div className="text-sm">
-                        <div className="font-medium">
-                          {Math.floor(Math.random() * 5) + 1}H,{" "}
-                          {Math.floor(Math.random() * 4) + 1}RBI,{" "}
-                          {Math.floor(Math.random() * 3)}HR
-                        </div>
-                        <div className="text-muted-foreground">
-                          AVG .{Math.floor(Math.random() * 300) + 200}
-                        </div>
-                      </div>
-                    </TableCell> */}
+                    <TableCell>
+                      <Badge
+                        variant="secondary"
+                        className={isUserWin ? "bg-green-600" : "bg-red-600"}
+                      >
+                        {isUserWin ? "승리" : "패배"}
+                      </Badge>
+                    </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                );
+              })}
+            </TableBody>
+          </Table>
+          {page < totalPages && (
+            <div className="flex justify-center mt-6">
+              <Button
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="bg-muted/40 text-foreground flex items-center justify-center gap-2"
+              >
+                {loadingMore ? (
+                  <Loader2 className="animate-spin w-5 h-5" />
+                ) : (
+                  "더 보기"
+                )}
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
