@@ -97,7 +97,7 @@
   }
 
   .showstats-highlight {
-    @apply text-primary font-semibold;
+    @apply text-yellow-400 font-semibold;
   }
 
   .showstats-stat-box {
