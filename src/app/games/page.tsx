@@ -20,6 +20,12 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 // ApiGameHistoryItem 타입 정의 (혹은 import)
 type ApiGameHistoryItem = {
@@ -47,6 +53,7 @@ function GamesPageContent() {
   >([]);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
+  const [modeFilter, setModeFilter] = useState<string>("All");
 
   // 최초 로딩 및 페이지 변경 시 데이터 fetch
   useEffect(() => {
@@ -229,6 +236,16 @@ function GamesPageContent() {
     }
   };
 
+  // 필터링된 게임 목록
+  const filteredGames = games.filter((game) => {
+    if (modeFilter === "All") return true;
+    const isCPU =
+      game.home_full_name === "CPU" || game.away_full_name === "CPU";
+    if (modeFilter === "CPU") return isCPU;
+    if (modeFilter === "PvP") return !isCPU;
+    return true;
+  });
+
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
       {/* 헤더 */}
@@ -261,14 +278,12 @@ function GamesPageContent() {
               )}
             </div>
           </div>
-
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
             <span className="text-sm text-muted-foreground">실시간 데이터</span>
           </div>
         </div>
       </div>
-
       {/* 사용자 프로필 */}
       <UserProfile
         username={username}
@@ -312,9 +327,22 @@ function GamesPageContent() {
       <Card className="showstats-card">
         <CardContent className="p-6">
           <div className="mb-6">
-            <h2 className="text-xl font-bold showstats-highlight mb-2">
-              최근 경기 목록
-            </h2>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-xl font-bold showstats-highlight">
+                최근 경기 목록
+              </h2>
+              {/* 모드 필터 콤보박스 - 테이블 우측 상단 */}
+              <Select value={modeFilter} onValueChange={setModeFilter}>
+                <SelectTrigger className="w-32">
+                  {modeFilter === "All" ? "전체" : modeFilter}
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">전체</SelectItem>
+                  <SelectItem value="PvP">PvP</SelectItem>
+                  <SelectItem value="CPU">CPU</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <p className="text-muted-foreground">
               경기를 클릭하면 상세 분석을 확인할 수 있습니다
             </p>
@@ -331,7 +359,7 @@ function GamesPageContent() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {games.map((game) => {
+              {filteredGames.map((game) => {
                 const homeScore = parseInt(game.home_runs);
                 const awayScore = parseInt(game.away_runs);
                 const userTeam = finalTeamName;
@@ -362,9 +390,17 @@ function GamesPageContent() {
                     <TableCell>
                       <Badge
                         variant="secondary"
-                        className="bg-indigo-500/80 text-white"
+                        className={
+                          game.home_full_name === "CPU" ||
+                          game.away_full_name === "CPU"
+                            ? "bg-gray-500/80 text-white"
+                            : "bg-indigo-500/80 text-white"
+                        }
                       >
-                        PvP
+                        {game.home_full_name === "CPU" ||
+                        game.away_full_name === "CPU"
+                          ? "CPU"
+                          : "PvP"}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
