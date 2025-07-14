@@ -73,11 +73,8 @@ export default function Home() {
                 <span className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] [text-shadow:_2px_2px_0_rgb(0_0_0_/_40%)]">
                   {" "}
                 </span>
-                <span className="relative inline-block">
-                  <span className="absolute -top-2 -right-2 md:-top-4 md:-right-4 bg-gradient-to-br from-yellow-400 via-yellow-500 to-orange-500 text-black text-4xl md:text-6xl font-black px-4 py-2 md:px-6 md:py-3 rounded-lg transform rotate-12 shadow-2xl border-2 border-yellow-300">
-                    25
-                  </span>
-                  <span className="text-transparent select-none">25</span>
+                <span className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] [text-shadow:_2px_2px_0_rgb(0_0_0_/_40%)]">
+                  25
                 </span>
               </h1>
 

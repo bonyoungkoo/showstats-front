@@ -246,6 +246,22 @@ function GamesPageContent() {
     return true;
   });
 
+  const convertToKoreanDate = (date: string) => {
+    const utcDate = new Date(`${date} UTC`);
+    const kstDate = new Date(utcDate.getTime() + 9 * 60 * 60 * 1000); // UTC+9
+
+    const pad = (n: number) => String(n).padStart(2, "0");
+
+    const year = kstDate.getFullYear();
+    const month = pad(kstDate.getMonth() + 1);
+    const day = pad(kstDate.getDate());
+    const hour = pad(kstDate.getHours());
+    const minute = pad(kstDate.getMinutes());
+    const second = pad(kstDate.getSeconds());
+
+    return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
       {/* 헤더 */}
@@ -381,11 +397,20 @@ function GamesPageContent() {
                   >
                     <TableCell>
                       <div className="font-medium">
-                        {game.display_date?.split(" ")[0]?.replaceAll("/", ".")}
+                        {
+                          convertToKoreanDate(game.display_date || "").split(
+                            " "
+                          )[0]
+                        }
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {game.display_date?.split(" ")[1]}
+                        {
+                          convertToKoreanDate(game.display_date || "").split(
+                            " "
+                          )[1]
+                        }
                       </div>
+                      {/* 2025년-07월-10일 21시:4:40*/}
                     </TableCell>
                     <TableCell>
                       <Badge
