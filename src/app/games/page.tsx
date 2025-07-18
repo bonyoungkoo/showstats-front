@@ -26,6 +26,10 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 
 // ApiGameHistoryItem 타입 정의 (혹은 import)
 type ApiGameHistoryItem = {
@@ -54,6 +58,9 @@ function GamesPageContent() {
   const [totalPages, setTotalPages] = useState<number>(1);
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
   const [modeFilter, setModeFilter] = useState<string>("All");
+  dayjs.extend(utc);
+  dayjs.extend(timezone);
+  dayjs.extend(customParseFormat);
 
   // 최초 로딩 및 페이지 변경 시 데이터 fetch
   useEffect(() => {
@@ -246,20 +253,11 @@ function GamesPageContent() {
     return true;
   });
 
-  const convertToKoreanDate = (date: string) => {
-    const utcDate = new Date(`${date} UTC`);
-    const kstDate = new Date(utcDate.getTime() + 9 * 60 * 60 * 1000); // UTC+9
-
-    const pad = (n: number) => String(n).padStart(2, "0");
-
-    const year = kstDate.getFullYear();
-    const month = pad(kstDate.getMonth() + 1);
-    const day = pad(kstDate.getDate());
-    const hour = pad(kstDate.getHours());
-    const minute = pad(kstDate.getMinutes());
-    const second = pad(kstDate.getSeconds());
-
-    return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+  const convertUTCtoKST = (date: string) => {
+    return dayjs
+      .utc(date, "MM/DD/YYYY HH:mm:ss")
+      .tz("Asia/Seoul")
+      .format("YYYY-MM-DD HH:mm:ss");
   };
 
   return (
@@ -366,12 +364,12 @@ function GamesPageContent() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>날짜/시간</TableHead>
                 <TableHead>모드</TableHead>
                 <TableHead className="text-right">어웨이</TableHead>
                 <TableHead className="text-center">스코어</TableHead>
                 <TableHead className="text-left">홈</TableHead>
                 <TableHead>결과</TableHead>
+                <TableHead>날짜/시간</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -395,23 +393,6 @@ function GamesPageContent() {
                     className="cursor-pointer hover:bg-muted/30"
                     onClick={() => handleGameDetail(game.gameId)}
                   >
-                    <TableCell>
-                      <div className="font-medium">
-                        {
-                          convertToKoreanDate(game.display_date || "").split(
-                            " "
-                          )[0]
-                        }
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {
-                          convertToKoreanDate(game.display_date || "").split(
-                            " "
-                          )[1]
-                        }
-                      </div>
-                      {/* 2025년-07월-10일 21시:4:40*/}
-                    </TableCell>
                     <TableCell>
                       <Badge
                         variant="secondary"
@@ -452,6 +433,15 @@ function GamesPageContent() {
                       >
                         {isUserWin ? "승리" : "패배"}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-medium">
+                        {convertUTCtoKST(game.display_date || "").split(" ")[0]}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {convertUTCtoKST(game.display_date || "").split(" ")[1]}
+                      </div>
+                      {/* 2025년-07월-10일 21시:4:40*/}
                     </TableCell>
                   </TableRow>
                 );
