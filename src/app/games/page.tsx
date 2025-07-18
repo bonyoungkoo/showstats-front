@@ -369,7 +369,7 @@ function GamesPageContent() {
                 <TableHead className="text-center">스코어</TableHead>
                 <TableHead className="text-left">홈</TableHead>
                 <TableHead>결과</TableHead>
-                <TableHead>경기날짜</TableHead>
+                <TableHead>경기일자</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
