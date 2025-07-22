@@ -10,6 +10,7 @@ export default function Header() {
   const navigation = [
     { name: "홈", href: "/" },
     { name: "전적 조회", href: "/games" },
+    { name: "선수 DB", href: "/players" },
     { name: "랭킹", href: "/rankings" },
     { name: "통계", href: "/stats" },
   ];

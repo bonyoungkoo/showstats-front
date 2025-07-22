@@ -11,8 +11,16 @@ export const metadata: Metadata = {
   description: "MLB The Show 야구 게임 전적 조회 및 심화 분석 플랫폼",
   manifest: "/manifest.json",
   icons: {
-    icon: "/icon.png",
+    icon: [
+      { url: "/icon.png", sizes: "32x32", type: "image/png" },
+      { url: "/icon.png", sizes: "16x16", type: "image/png" },
+    ],
+    shortcut: "/icon.png",
     apple: "/icon.png",
+  },
+  other: {
+    "msapplication-TileColor": "#FFC107",
+    "msapplication-TileImage": "/icon.png",
   },
 };
 
