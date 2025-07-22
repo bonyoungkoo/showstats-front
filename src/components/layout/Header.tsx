@@ -4,13 +4,21 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { Menu } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
 export default function Header() {
   const pathname = usePathname();
 
   const navigation = [
     { name: "홈", href: "/" },
     { name: "전적 조회", href: "/games" },
-    { name: "선수 DB", href: "/players" },
+    { name: "선수DB", href: "/players" },
     { name: "랭킹", href: "/rankings" },
     { name: "통계", href: "/stats" },
   ];
@@ -46,7 +54,38 @@ export default function Header() {
               ))}
             </nav>
           </div>
-          <Button className="showstats-button">로그인</Button>
+
+          <div className="flex items-center space-x-4">
+            <Button className="showstats-button hidden md:block">로그인</Button>
+
+            {/* 모바일 메뉴 */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="md:hidden">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                {navigation.map((item) => (
+                  <DropdownMenuItem key={item.name} asChild>
+                    <Link
+                      href={item.href}
+                      className={`w-full ${
+                        pathname === item.href ? "text-primary font-medium" : ""
+                      }`}
+                    >
+                      {item.name}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuItem asChild>
+                  <Button className="showstats-button w-full mt-2">
+                    로그인
+                  </Button>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
     </header>
