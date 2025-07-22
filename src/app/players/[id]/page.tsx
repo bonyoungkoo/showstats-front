@@ -1,15 +1,19 @@
 import PlayerDetailClient from "@/components/players/PlayerDetailClient";
 
 interface PlayerDetailPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
-export default function PlayerDetailPage({ params }: PlayerDetailPageProps) {
+export default async function PlayerDetailPage({
+  params,
+}: PlayerDetailPageProps) {
+  const { id } = await params;
+
   return (
     <div className="container mx-auto px-4 py-8">
-      <PlayerDetailClient playerId={params.id} />
+      <PlayerDetailClient playerId={id} />
     </div>
   );
 }
