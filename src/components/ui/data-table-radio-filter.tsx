@@ -53,7 +53,8 @@ export function DataTableRadioFilter<TData, TValue>({
                 variant="secondary"
                 className="rounded-sm px-1 font-normal lg:hidden"
               >
-                1
+                {options.find((option) => option.value === selectedValue)
+                  ?.label || selectedValue}
               </Badge>
               <div className="hidden space-x-1 lg:flex">
                 <Badge
