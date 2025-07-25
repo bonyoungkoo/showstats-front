@@ -80,21 +80,21 @@ export default function PlayerComparisonDialog({
 
   // 비교할 스탯 목록
   const statsToCompare = [
-    { key: "contact_left", label: "좌타 컨택트" },
-    { key: "contact_right", label: "우타 컨택트" },
+    { key: "contact_left", label: "좌타 컨택" },
+    { key: "contact_right", label: "우타 컨택" },
     { key: "power_left", label: "좌타 파워" },
     { key: "power_right", label: "우타 파워" },
     { key: "speed", label: "스피드" },
     { key: "fielding_ability", label: "수비 능력" },
-    { key: "arm_strength", label: "어깨 강도" },
-    { key: "arm_accuracy", label: "어깨 정확도" },
+    { key: "arm_strength", label: "송구 파워" },
+    { key: "arm_accuracy", label: "송구 정확도" },
     { key: "reaction_time", label: "반응 속도" },
     { key: "baserunning_ability", label: "주루 능력" },
     { key: "baserunning_aggression", label: "주루 공격성" },
     { key: "plate_vision", label: "타격 시야" },
-    { key: "plate_discipline", label: "타격 훈련" },
+    { key: "plate_discipline", label: "선구안" },
     { key: "batting_clutch", label: "타격 클러치" },
-    { key: "hitting_durability", label: "타격 내구성" },
+    { key: "hitting_durability", label: "타격 내구도" },
   ];
 
   return (

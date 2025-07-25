@@ -287,9 +287,7 @@ export default function PlayerDetailClient({
                     </div>
                     <div className="space-y-3">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">
-                          좌타 컨택트
-                        </span>
+                        <span className="text-muted-foreground">좌타 컨택</span>
                         <span
                           className={`font-semibold ${getStatColor(player.contact_left)}`}
                         >
@@ -297,9 +295,7 @@ export default function PlayerDetailClient({
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">
-                          우타 컨택트
-                        </span>
+                        <span className="text-muted-foreground">우타 컨택</span>
                         <span
                           className={`font-semibold ${getStatColor(player.contact_right)}`}
                         >
@@ -334,7 +330,7 @@ export default function PlayerDetailClient({
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">
-                          타격 내구성
+                          타격 내구도
                         </span>
                         <span
                           className={`font-semibold ${getStatColor(player.hitting_durability)}`}
@@ -372,7 +368,7 @@ export default function PlayerDetailClient({
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">어깨 강도</span>
+                      <span className="text-muted-foreground">송구 파워</span>
                       <span
                         className={`font-semibold ${getStatColor(player.arm_strength)}`}
                       >
@@ -380,7 +376,7 @@ export default function PlayerDetailClient({
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">어깨 정확도</span>
+                      <span className="text-muted-foreground">송구 정확도</span>
                       <span
                         className={`font-semibold ${getStatColor(player.arm_accuracy)}`}
                       >
@@ -457,7 +453,7 @@ export default function PlayerDetailClient({
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">타격 훈련</span>
+                        <span className="text-muted-foreground">선구안</span>
                         <span
                           className={`font-semibold ${getStatColor(player.plate_discipline)}`}
                         >
@@ -488,55 +484,137 @@ export default function PlayerDetailClient({
 
                 {/* 투구 스탯 */}
                 {!player.is_hitter && (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-white border-b border-border pb-2">
-                      투구
-                    </h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">구속</span>
-                        <span
-                          className={`font-semibold ${getStatColor(player.pitch_velocity)}`}
-                        >
-                          {player.pitch_velocity}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">제구력</span>
-                        <span
-                          className={`font-semibold ${getStatColor(player.pitch_control)}`}
-                        >
-                          {player.pitch_control}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">구종 변화</span>
-                        <span
-                          className={`font-semibold ${getStatColor(player.pitch_movement)}`}
-                        >
-                          {player.pitch_movement}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">
-                          투구 클러치
-                        </span>
-                        <span
-                          className={`font-semibold ${getStatColor(player.pitching_clutch)}`}
-                        >
-                          {player.pitching_clutch}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">체력</span>
-                        <span
-                          className={`font-semibold ${getStatColor(player.stamina)}`}
-                        >
-                          {player.stamina}
-                        </span>
+                  <>
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-white border-b border-border pb-2">
+                        투구
+                      </h3>
+                      <div className="space-y-3">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">구속</span>
+                          <span
+                            className={`font-semibold ${getStatColor(player.pitch_velocity)}`}
+                          >
+                            {player.pitch_velocity}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">제구력</span>
+                          <span
+                            className={`font-semibold ${getStatColor(player.pitch_control)}`}
+                          >
+                            {player.pitch_control}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">
+                            투구 무브먼트
+                          </span>
+                          <span
+                            className={`font-semibold ${getStatColor(player.pitch_movement)}`}
+                          >
+                            {player.pitch_movement}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">
+                            투구 클러치
+                          </span>
+                          <span
+                            className={`font-semibold ${getStatColor(player.pitching_clutch)}`}
+                          >
+                            {player.pitching_clutch}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">체력</span>
+                          <span
+                            className={`font-semibold ${getStatColor(player.stamina)}`}
+                          >
+                            {player.stamina}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
+
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-white border-b border-border pb-2">
+                        구종
+                      </h3>
+
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-semibold text-white ">
+                          4-Seam Fastball
+                        </h4>
+                        <div className="space-y-3">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">구속</span>
+                            <span
+                              className={`font-semibold ${getStatColor(player.pitch_velocity)}`}
+                            >
+                              {player.pitch_velocity}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">
+                              제구력
+                            </span>
+                            <span
+                              className={`font-semibold ${getStatColor(player.pitch_control)}`}
+                            >
+                              {player.pitch_control}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">
+                              투구 무브먼트
+                            </span>
+                            <span
+                              className={`font-semibold ${getStatColor(player.pitch_movement)}`}
+                            >
+                              {player.pitch_movement}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-semibold text-white">
+                          Slider
+                        </h4>
+                        <div className="space-y-3">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">구속</span>
+                            <span
+                              className={`font-semibold ${getStatColor(player.pitch_velocity)}`}
+                            >
+                              {player.pitch_velocity}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">
+                              제구력
+                            </span>
+                            <span
+                              className={`font-semibold ${getStatColor(player.pitch_control)}`}
+                            >
+                              {player.pitch_control}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">
+                              투구 무브먼트
+                            </span>
+                            <span
+                              className={`font-semibold ${getStatColor(player.pitch_movement)}`}
+                            >
+                              {player.pitch_movement}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             </CardContent>
