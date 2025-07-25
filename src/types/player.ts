@@ -1,3 +1,9 @@
+export interface Pitch {
+  name: string;
+  speed: number;
+  control: number;
+  movement: number;
+}
 export interface PlayerCard {
   _id: string;
   uuid: string;
@@ -40,6 +46,7 @@ export interface PlayerCard {
   pitch_control: number;
   pitch_movement: number;
   pitching_clutch: number;
+  pitches?: Pitch[];
   stamina: number;
   is_hitter: boolean;
   locations: string[];
