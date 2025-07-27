@@ -4,6 +4,12 @@ export interface Pitch {
   control: number;
   movement: number;
 }
+
+interface Quirk {
+  name: string;
+  description: string;
+  img: string;
+}
 export interface PlayerCard {
   _id: string;
   uuid: string;
@@ -42,6 +48,10 @@ export interface PlayerCard {
   bunting_ability: number;
   drag_bunting_ability: number;
   hitting_durability: number;
+  hits_per_bf: number;
+  k_per_bf: number;
+  bb_per_bf: number;
+  hr_per_bf: number;
   pitch_velocity: number;
   pitch_control: number;
   pitch_movement: number;
@@ -50,6 +60,7 @@ export interface PlayerCard {
   stamina: number;
   is_hitter: boolean;
   locations: string[];
+  quirks: Quirk[];
   event: boolean;
   is_live_set: boolean;
   is_sellable: boolean;
