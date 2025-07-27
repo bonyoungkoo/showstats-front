@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowUpDown, Users } from "lucide-react";
 import Link from "next/link";
 import { PitchType, PlayerCard } from "@/types/player";
+import Image from "next/image";
 
 export const createColumns = (
   onAddToCompare: (player: PlayerCard) => void,
@@ -24,13 +25,16 @@ export const createColumns = (
         </Button>
       );
     },
+
     cell: ({ row }) => {
       const player = row.original;
       return (
         <div className="flex items-center justify-center gap-2">
-          <img
+          <Image
             src={`/rarity/shield-${player.rarity.toLowerCase()}.webp`}
             alt={`${player.rarity} shield`}
+            width={32}
+            height={45}
             className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
@@ -38,6 +42,51 @@ export const createColumns = (
             }}
           />
           <span className="font-bold text-sm sm:text-base">{player.ovr}</span>
+        </div>
+      );
+    },
+  },
+  {
+    id: "compare",
+    header: "비교",
+    enableHiding: false,
+    cell: ({ row }) => {
+      const player = row.original;
+      const isAlreadySelected = compareCandidates.some(
+        (candidate) => candidate.uuid === player.uuid
+      );
+      const isMaxReached = compareCandidates.length >= 2;
+
+      return (
+        <div className="flex justify-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onAddToCompare(player)}
+            disabled={isAlreadySelected || isMaxReached}
+            className={`h-8 w-8 p-0 ${
+              isAlreadySelected || isMaxReached
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:bg-blue-50 dark:hover:bg-blue-950/20"
+            }`}
+          >
+            <Users
+              className={`h-4 w-4 ${
+                isAlreadySelected
+                  ? "text-green-600 dark:text-green-400"
+                  : isMaxReached
+                    ? "text-gray-400"
+                    : "text-blue-600 dark:text-blue-400"
+              }`}
+            />
+            <span className="sr-only">
+              {isAlreadySelected
+                ? "이미 선택됨"
+                : isMaxReached
+                  ? "최대 선택 완료"
+                  : "비교에 추가"}
+            </span>
+          </Button>
         </div>
       );
     },
@@ -226,51 +275,7 @@ export const createColumns = (
       );
     },
   },
-  {
-    id: "compare",
-    header: "선수 비교",
-    enableHiding: false,
-    cell: ({ row }) => {
-      const player = row.original;
-      const isAlreadySelected = compareCandidates.some(
-        (candidate) => candidate.uuid === player.uuid
-      );
-      const isMaxReached = compareCandidates.length >= 2;
 
-      return (
-        <div className="flex justify-center">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onAddToCompare(player)}
-            disabled={isAlreadySelected || isMaxReached}
-            className={`h-8 w-8 p-0 ${
-              isAlreadySelected || isMaxReached
-                ? "opacity-50 cursor-not-allowed"
-                : "hover:bg-blue-50 dark:hover:bg-blue-950/20"
-            }`}
-          >
-            <Users
-              className={`h-4 w-4 ${
-                isAlreadySelected
-                  ? "text-green-600 dark:text-green-400"
-                  : isMaxReached
-                    ? "text-gray-400"
-                    : "text-blue-600 dark:text-blue-400"
-              }`}
-            />
-            <span className="sr-only">
-              {isAlreadySelected
-                ? "이미 선택됨"
-                : isMaxReached
-                  ? "최대 선택 완료"
-                  : "비교에 추가"}
-            </span>
-          </Button>
-        </div>
-      );
-    },
-  },
   // Hidden filter columns (no visual representation)
   {
     accessorKey: "pitches",
