@@ -23,15 +23,26 @@ export function DataTableViewOptions<TData>({
   const getColumnDisplayName = (columnId: string) => {
     const columnNames: Record<string, string> = {
       ovr: "오버롤",
-      card: "카드",
-      bat_hand: "타격",
+      카드: "카드",
+      bat_hand: "타격 방향",
       display_position: "포지션",
-      throw_hand: "투구",
+      throw_hand: "투구 방향",
       display_secondary_positions: "서브 포지션",
-      actions: "액션",
+      compare: "선수 비교",
     };
     return columnNames[columnId] || columnId;
   };
+
+  const hiddenColumns = [
+    "pitches",
+    "height",
+    "batting_stats",
+    "fielding_stats",
+    "baserunning_stats",
+    "pitching_stats",
+    "series",
+    "quirks",
+  ];
 
   return (
     <DropdownMenu>
@@ -48,7 +59,9 @@ export function DataTableViewOptions<TData>({
           .getAllColumns()
           .filter(
             (column) =>
-              typeof column.accessorFn !== "undefined" && column.getCanHide()
+              typeof column.accessorFn !== "undefined" &&
+              column.getCanHide() &&
+              !hiddenColumns.includes(column.id)
           )
           .map((column) => {
             return (

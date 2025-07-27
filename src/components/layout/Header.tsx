@@ -2,7 +2,8 @@
 
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useFilterStore } from "@/lib/filter-store";
 
 import { Menu } from "lucide-react";
 import {
@@ -14,6 +15,13 @@ import {
 
 export default function Header() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { resetAll } = useFilterStore();
+
+  const handleHomeClick = () => {
+    resetAll();
+    router.push("/");
+  };
 
   const navigation = [
     { name: "홈", href: "/" },
@@ -28,7 +36,7 @@ export default function Header() {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-8">
-            <Link href="/" className="transition-colors">
+            <button onClick={handleHomeClick} className="transition-colors">
               <div className="text-3xl font-black tracking-tight">
                 <span className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] [text-shadow:_2px_2px_0_rgb(0_0_0_/_40%)]">
                   Show
@@ -37,21 +45,35 @@ export default function Header() {
                   Stats
                 </span>
               </div>
-            </Link>
+            </button>
             <nav className="hidden md:flex space-x-6">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`transition-colors ${
-                    pathname === item.href
-                      ? "text-primary font-medium"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {item.name}
-                </Link>
-              ))}
+              {navigation.map((item) =>
+                item.name === "홈" ? (
+                  <button
+                    key={item.name}
+                    onClick={handleHomeClick}
+                    className={`transition-colors ${
+                      pathname === item.href
+                        ? "text-primary font-medium"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {item.name}
+                  </button>
+                ) : (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={`transition-colors ${
+                      pathname === item.href
+                        ? "text-primary font-medium"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                )
+              )}
             </nav>
           </div>
 
@@ -68,14 +90,29 @@ export default function Header() {
               <DropdownMenuContent align="end" className="w-48">
                 {navigation.map((item) => (
                   <DropdownMenuItem key={item.name} asChild>
-                    <Link
-                      href={item.href}
-                      className={`w-full ${
-                        pathname === item.href ? "text-primary font-medium" : ""
-                      }`}
-                    >
-                      {item.name}
-                    </Link>
+                    {item.name === "홈" ? (
+                      <button
+                        onClick={handleHomeClick}
+                        className={`w-full text-left ${
+                          pathname === item.href
+                            ? "text-primary font-medium"
+                            : ""
+                        }`}
+                      >
+                        {item.name}
+                      </button>
+                    ) : (
+                      <Link
+                        href={item.href}
+                        className={`w-full ${
+                          pathname === item.href
+                            ? "text-primary font-medium"
+                            : ""
+                        }`}
+                      >
+                        {item.name}
+                      </Link>
+                    )}
                   </DropdownMenuItem>
                 ))}
                 <DropdownMenuItem asChild>

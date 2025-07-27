@@ -14,6 +14,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useFilterStore } from "@/lib/filter-store";
+import { saveFilterState } from "@/lib/filter-persistence";
 
 interface PlayerDetailClientProps {
   playerId: string;
@@ -25,7 +27,31 @@ export default function PlayerDetailClient({
   const [player, setPlayer] = useState<PlayerCard | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // 필터 상태 가져오기
+  const filterState = useFilterStore();
+
   useEffect(() => {
+    // 상세 페이지 진입 시 현재 필터 상태 저장
+    console.log("상세 페이지 진입 시 저장할 상태:", {
+      columnFilters: filterState.columnFilters,
+      sorting: filterState.sorting,
+      currentPage: filterState.currentPage,
+      pageSize: filterState.pageSize,
+      pitchStats: filterState.pitchStats,
+      heightRange: filterState.heightRange,
+      statRanges: filterState.statRanges,
+    });
+
+    saveFilterState({
+      columnFilters: filterState.columnFilters,
+      sorting: filterState.sorting,
+      currentPage: filterState.currentPage,
+      pageSize: filterState.pageSize,
+      pitchStats: filterState.pitchStats,
+      heightRange: filterState.heightRange,
+      statRanges: filterState.statRanges,
+    });
+
     const fetchPlayer = async () => {
       setLoading(true);
       try {
@@ -46,7 +72,7 @@ export default function PlayerDetailClient({
     };
 
     fetchPlayer();
-  }, [playerId]);
+  }, [playerId, filterState]);
 
   const getHandDisplay = (batHand: string, throwHand: string) => {
     if (batHand === "S") return "S/R";

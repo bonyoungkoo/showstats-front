@@ -54,7 +54,6 @@ async function fetchUserGames(username: string): Promise<UserGamesResponse> {
   }
 
   const data: ApiResponse = await response.json();
-  console.log(data);
 
   // API 응답을 UserGamesResponse 형식으로 변환
   if (data.game_history && Array.isArray(data.game_history)) {

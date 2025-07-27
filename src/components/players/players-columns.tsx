@@ -3,19 +3,13 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ArrowUpDown, Users } from "lucide-react";
 import Link from "next/link";
-import { PlayerCard } from "@/types/player";
+import { PitchType, PlayerCard } from "@/types/player";
 
 export const createColumns = (
-  onCompareClick: (player: PlayerCard) => void
+  onAddToCompare: (player: PlayerCard) => void,
+  compareCandidates: PlayerCard[] = []
 ): ColumnDef<PlayerCard>[] => [
   {
     accessorKey: "ovr",
@@ -49,7 +43,8 @@ export const createColumns = (
     },
   },
   {
-    accessorKey: "card",
+    accessorKey: "name",
+    id: "카드",
     header: "카드",
     cell: ({ row }) => {
       const player = row.original;
@@ -85,7 +80,6 @@ export const createColumns = (
       );
     },
   },
-
   {
     accessorKey: "bat_hand",
     header: ({ column }) => {
@@ -94,7 +88,7 @@ export const createColumns = (
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          타격
+          타격 방향
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
@@ -122,7 +116,7 @@ export const createColumns = (
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          투구
+          투구 방향
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
@@ -233,28 +227,194 @@ export const createColumns = (
     },
   },
   {
-    id: "actions",
+    id: "compare",
+    header: "선수 비교",
     enableHiding: false,
     cell: ({ row }) => {
       const player = row.original;
+      const isAlreadySelected = compareCandidates.some(
+        (candidate) => candidate.uuid === player.uuid
+      );
+      const isMaxReached = compareCandidates.length >= 2;
 
       return (
         <div className="flex justify-center">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => onCompareClick(player)}>
-                선수 비교
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onAddToCompare(player)}
+            disabled={isAlreadySelected || isMaxReached}
+            className={`h-8 w-8 p-0 ${
+              isAlreadySelected || isMaxReached
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:bg-blue-50 dark:hover:bg-blue-950/20"
+            }`}
+          >
+            <Users
+              className={`h-4 w-4 ${
+                isAlreadySelected
+                  ? "text-green-600 dark:text-green-400"
+                  : isMaxReached
+                    ? "text-gray-400"
+                    : "text-blue-600 dark:text-blue-400"
+              }`}
+            />
+            <span className="sr-only">
+              {isAlreadySelected
+                ? "이미 선택됨"
+                : isMaxReached
+                  ? "최대 선택 완료"
+                  : "비교에 추가"}
+            </span>
+          </Button>
         </div>
+      );
+    },
+  },
+  // Hidden filter columns (no visual representation)
+  {
+    accessorKey: "pitches",
+    header: () => null,
+    cell: () => null,
+    enableHiding: false,
+    size: 0,
+    minSize: 0,
+    maxSize: 0,
+    filterFn: (row, id, value) => {
+      const player = row.original;
+      if (!player.pitches || player.pitches.length === 0) return false;
+
+      const selectedPitchTypes = value as string[];
+      const playerPitchTypes = player.pitches.map((pitch) => pitch.name);
+
+      return selectedPitchTypes.some((pitchType) =>
+        playerPitchTypes.includes(pitchType as PitchType)
+      );
+    },
+  },
+  {
+    accessorKey: "height",
+    header: () => null,
+    cell: () => null,
+    enableHiding: false,
+    size: 0,
+    minSize: 0,
+    maxSize: 0,
+    filterFn: (row, id, value) => {
+      const player = row.original;
+      if (!player.height) return false;
+
+      const heightRange = value as [number, number];
+      const playerHeight = Number(player.height);
+
+      return playerHeight >= heightRange[0] && playerHeight <= heightRange[1];
+    },
+  },
+  {
+    accessorKey: "batting_stats",
+    header: () => null,
+    cell: () => null,
+    enableHiding: false,
+    size: 0,
+    minSize: 0,
+    maxSize: 0,
+    filterFn: (row, id, value) => {
+      const player = row.original;
+      const selectedStats = value as string[];
+
+      return selectedStats.every((stat) => {
+        const playerValue = player[stat as keyof PlayerCard];
+        return playerValue !== undefined && playerValue !== null;
+      });
+    },
+  },
+  {
+    accessorKey: "fielding_stats",
+    header: () => null,
+    cell: () => null,
+    enableHiding: false,
+    size: 0,
+    minSize: 0,
+    maxSize: 0,
+    filterFn: (row, id, value) => {
+      const player = row.original;
+      const selectedStats = value as string[];
+
+      return selectedStats.every((stat) => {
+        const playerValue = player[stat as keyof PlayerCard];
+        return playerValue !== undefined && playerValue !== null;
+      });
+    },
+  },
+  {
+    accessorKey: "baserunning_stats",
+    header: () => null,
+    cell: () => null,
+    enableHiding: false,
+    size: 0,
+    minSize: 0,
+    maxSize: 0,
+    filterFn: (row, id, value) => {
+      const player = row.original;
+      const selectedStats = value as string[];
+
+      return selectedStats.every((stat) => {
+        const playerValue = player[stat as keyof PlayerCard];
+        return playerValue !== undefined && playerValue !== null;
+      });
+    },
+  },
+  {
+    accessorKey: "pitching_stats",
+    header: () => null,
+    cell: () => null,
+    enableHiding: false,
+    size: 0,
+    minSize: 0,
+    maxSize: 0,
+    filterFn: (row, id, value) => {
+      const player = row.original;
+      const selectedStats = value as string[];
+
+      return selectedStats.every((stat) => {
+        const playerValue = player[stat as keyof PlayerCard];
+        return playerValue !== undefined && playerValue !== null;
+      });
+    },
+  },
+  {
+    accessorKey: "series",
+    header: () => null,
+    cell: () => null,
+    enableHiding: false,
+    size: 0,
+    minSize: 0,
+    maxSize: 0,
+    filterFn: (row, id, value) => {
+      const player = row.original;
+      if (!player.series) return false;
+
+      const selectedSeries = value as string[];
+      return selectedSeries.includes(player.series);
+    },
+  },
+  {
+    accessorKey: "quirks",
+    header: () => null,
+    cell: () => null,
+    enableHiding: false,
+    size: 0,
+    minSize: 0,
+    maxSize: 0,
+    filterFn: (row, id, value) => {
+      const player = row.original;
+      if (!player.quirks || player.quirks.length === 0) return false;
+
+      const selectedQuirks = value as string[];
+      const playerQuirkNames = player.quirks.map((quirk) => quirk.name);
+
+      return selectedQuirks.some((quirkName) =>
+        playerQuirkNames.includes(quirkName)
       );
     },
   },

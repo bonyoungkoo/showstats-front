@@ -11,9 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRecentSearches } from "@/hooks/useRecentSearches";
 import { Clock, X, Users, Trophy, TrendingUp } from "lucide-react";
+import { useFilterStore } from "@/lib/filter-store";
 
 export default function Home() {
   const router = useRouter();
@@ -22,6 +23,12 @@ export default function Home() {
   const [showTeammateInput, setShowTeammateInput] = useState(false);
 
   const { data: recentSearches, addSearch, removeSearch } = useRecentSearches();
+  const { resetAll } = useFilterStore();
+
+  // 홈 페이지 진입 시 필터 상태 초기화
+  useEffect(() => {
+    resetAll();
+  }, [resetAll]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,91 +1,173 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { PlayerCard, PlayersResponse } from "@/types/player";
 import { DataTableServer } from "@/components/ui/data-table-server";
 import { createColumns } from "./players-columns";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { SortingState, ColumnFiltersState } from "@tanstack/react-table";
-import PlayerComparisonDialog from "./PlayerComparisonDialog";
+import CompareSheet from "./CompareSheet";
+import CompareDialog from "./CompareDialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  PlayerCardSearchFilters,
+  playerCardFilterKeys,
+} from "@/types/player-card-filters";
+import { useFilterStore } from "@/lib/filter-store";
+import { restoreFilterState } from "@/lib/filter-persistence";
+import { toast } from "sonner";
 
 export default function PlayersClient() {
   const [players, setPlayers] = useState<PlayerCard[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
   const [totalCount, setTotalCount] = useState(0);
   const [pageCount, setPageCount] = useState(0);
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
-    null
-  );
-  const [comparisonDialogOpen, setComparisonDialogOpen] = useState(false);
-  const [selectedPlayerForComparison, setSelectedPlayerForComparison] =
-    useState<PlayerCard | null>(null);
 
-  // 선수비교 팝업 열기
-  const handleCompareClick = (player: PlayerCard) => {
-    setSelectedPlayerForComparison(player);
-    setComparisonDialogOpen(true);
+  // Zustand 스토어에서 상태 가져오기
+  const {
+    pitchStats,
+    statRanges,
+    columnFilters,
+    sorting,
+    currentPage,
+    pageSize,
+    setColumnFilters,
+    setSorting,
+    setCurrentPage,
+    setPageSize,
+    resetAll,
+  } = useFilterStore();
+
+  const [compareCandidates, setCompareCandidates] = useState<PlayerCard[]>([]);
+  const [compareDialogOpen, setCompareDialogOpen] = useState(false);
+
+  // 선수비교 후보에 추가
+  const handleAddToCompare = (player: PlayerCard) => {
+    // 2명 제한 확인
+    if (compareCandidates.length >= 2) {
+      toast.error("최대 2명까지만 비교할 수 있습니다.");
+      return;
+    }
+
+    // 이미 추가된 선수인지 확인
+    if (compareCandidates.some((candidate) => candidate.uuid === player.uuid)) {
+      toast.warning("이미 비교 목록에 추가된 선수입니다.");
+      return;
+    }
+
+    setCompareCandidates((prev) => [...prev, player]);
+    toast.success(`${player.name}이(가) 선수 비교에 추가되었습니다.`);
   };
 
-  // 컬럼 생성
-  const columns = createColumns(handleCompareClick);
-
-  const buildFilters = (filters: ColumnFiltersState) => {
-    return filters.reduce(
-      (acc, filter) => {
-        // card 컬럼의 필터는 name으로 매핑 (서버 API에서 name으로 검색)
-        if (filter.id === "card") {
-          acc["name"] = filter.value as string;
-        } else if (filter.id === "bat_hand") {
-          // 타격 필터는 배열로 처리
-          acc["bat_hand"] = Array.isArray(filter.value)
-            ? filter.value.join(",")
-            : (filter.value as string);
-        } else if (filter.id === "display_position") {
-          // 포지션 필터는 배열로 처리
-          acc["display_position"] = Array.isArray(filter.value)
-            ? filter.value.join(",")
-            : (filter.value as string);
-        } else if (filter.id === "display_secondary_positions") {
-          // 서브 포지션 필터는 배열로 처리
-          acc["display_secondary_positions"] = Array.isArray(filter.value)
-            ? filter.value.join(",")
-            : (filter.value as string);
-        } else {
-          acc[filter.id] = filter.value as string;
-        }
-        return acc;
-      },
-      {} as Record<string, string>
+  // 선수비교 후보에서 제거
+  const handleRemoveFromCompare = (playerId: string) => {
+    setCompareCandidates((prev) =>
+      prev.filter((player) => player.uuid !== playerId)
     );
   };
 
-  const fetchPlayers = async (
-    page: number = 1,
-    limit: number = 25,
-    sortField?: string,
-    sortOrder: "asc" | "desc" = "desc",
-    filters: Record<string, string> = {}
-  ) => {
+  // 선수비교 후보 전체 초기화
+  const handleClearCompare = () => {
+    setCompareCandidates([]);
+  };
+
+  // 선수비교 다이얼로그 열기
+  const handleCompare = () => {
+    setCompareDialogOpen(true);
+  };
+
+  // 컬럼 생성
+  const columns = createColumns(handleAddToCompare, compareCandidates);
+
+  const buildFilters = (
+    filters: ColumnFiltersState,
+    validKeys: (keyof PlayerCardSearchFilters)[],
+    pitchStatsData: typeof pitchStats = pitchStats,
+    statRangesData: typeof statRanges = statRanges
+  ): PlayerCardSearchFilters => {
+    const result = filters.reduce((acc, filter) => {
+      if (validKeys.includes(filter.id as keyof PlayerCardSearchFilters)) {
+        const key = filter.id as keyof PlayerCardSearchFilters;
+
+        // 구종 필터링의 경우 문자열 배열을 객체 배열로 변환
+        if (key === "pitches" && Array.isArray(filter.value)) {
+          acc[key] = filter.value.map((pitchName: string) => {
+            const stats = pitchStatsData[pitchName];
+            return {
+              name: pitchName,
+              ...(stats && {
+                speed: stats.speed,
+                control: stats.control,
+                movement: stats.movement,
+              }),
+            };
+          }) as PlayerCardSearchFilters[typeof key];
+        } else {
+          (acc[key] as unknown) = filter.value;
+        }
+      }
+      return acc;
+    }, {} as Partial<PlayerCardSearchFilters>);
+
+    // 능력치 범위를 개별 필터로 추가 (batting_stats, fielding_stats 등은 제외)
+    Object.entries(statRangesData).forEach(([statName, range]) => {
+      // 능력치 그룹 필드가 아닌 개별 능력치만 추가
+      if (
+        ![
+          "batting_stats",
+          "fielding_stats",
+          "baserunning_stats",
+          "pitching_stats",
+        ].includes(statName as string)
+      ) {
+        (result as Record<string, typeof range>)[statName] = range;
+      }
+    });
+
+    return result as PlayerCardSearchFilters;
+  };
+
+  const fetchPlayers = async ({
+    page = 1,
+    limit = 25,
+    sortField,
+    sortOrder = "desc",
+    filters = {} as PlayerCardSearchFilters,
+  }: {
+    page?: number;
+    limit?: number;
+    sortField?: string;
+    sortOrder?: "asc" | "desc";
+    filters?: PlayerCardSearchFilters;
+  }) => {
+    console.log("filters", filters);
+    console.log("sortField", sortField);
+    console.log("sortOrder", sortOrder);
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: limit.toString(),
-        ...filters,
-      });
-
-      if (sortField) {
-        params.append("sort", sortField);
-        params.append("order", sortOrder);
-      }
-
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/player-cards/search?${params}`
+        `${process.env.NEXT_PUBLIC_API_URL}/api/player-cards/filter`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            page,
+            limit,
+            sort: sortField,
+            order: sortOrder,
+            filters,
+          }),
+        }
       );
+
       const data: PlayersResponse = await response.json();
 
       setPlayers(data.data);
@@ -100,14 +182,79 @@ export default function PlayersClient() {
   };
 
   useEffect(() => {
-    fetchPlayers(currentPage, pageSize);
+    // 상세 페이지에서 돌아온 경우 저장된 필터 상태 복원
+    const savedState = restoreFilterState();
 
-    // 컴포넌트 언마운트 시 타이머 정리
-    return () => {
-      if (searchTimeout) {
-        clearTimeout(searchTimeout);
+    if (savedState) {
+      console.log("복원된 상태:", savedState);
+      // 저장된 상태가 있으면 복원하고 즉시 데이터 요청
+      if (savedState.columnFilters) setColumnFilters(savedState.columnFilters);
+      if (savedState.sorting && savedState.sorting.length > 0) {
+        setSorting(savedState.sorting);
+      } else {
+        // 정렬 상태가 없으면 기본 정렬 설정
+        setSorting([{ id: "ovr", desc: true }]);
       }
-    };
+      if (savedState.currentPage) setCurrentPage(savedState.currentPage);
+      if (savedState.pageSize) setPageSize(savedState.pageSize);
+
+      // 복원된 상태로 즉시 데이터 요청
+      const sortField = savedState.sorting?.[0]?.id || "ovr";
+      const sortOrder = savedState.sorting?.[0]?.desc ? "desc" : "desc"; // 기본값을 desc로 설정
+      console.log("복원된 정렬:", {
+        sortField,
+        sortOrder,
+        sorting: savedState.sorting,
+      });
+
+      // 저장된 pitchStats와 statRanges가 있으면 Zustand 스토어에 복원
+      if (savedState.pitchStats) {
+        Object.entries(savedState.pitchStats).forEach(([pitchName, stats]) => {
+          Object.entries(stats).forEach(([stat, value]) => {
+            if (stat === "speed" || stat === "control" || stat === "movement") {
+              useFilterStore
+                .getState()
+                .updatePitchStat(
+                  pitchName,
+                  stat as "speed" | "control" | "movement",
+                  value as [number, number]
+                );
+            }
+          });
+        });
+      }
+
+      if (savedState.statRanges) {
+        Object.entries(savedState.statRanges).forEach(([statName, range]) => {
+          useFilterStore
+            .getState()
+            .updateStatRange(statName, range as [number, number]);
+        });
+      }
+
+      const filters = buildFilters(
+        savedState.columnFilters || [],
+        playerCardFilterKeys,
+        savedState.pitchStats || {},
+        savedState.statRanges || {}
+      );
+
+      fetchPlayers({
+        page: savedState.currentPage || 1,
+        limit: savedState.pageSize || 25,
+        sortField,
+        sortOrder,
+        filters,
+      });
+    } else {
+      // 저장된 상태가 없으면 초기 상태로 요청 (기본 정렬: ovr desc)
+      fetchPlayers({
+        page: 1,
+        limit: 25,
+        sortField: "ovr",
+        sortOrder: "desc",
+      });
+    }
   }, []);
 
   const handlePageChange = (page: number) => {
@@ -115,9 +262,20 @@ export default function PlayersClient() {
     const sortField = sorting.length > 0 ? sorting[0].id : undefined;
     const sortOrder =
       sorting.length > 0 ? (sorting[0].desc ? "desc" : "asc") : "desc";
-    const filters = buildFilters(columnFilters);
+    const filters = buildFilters(
+      columnFilters,
+      playerCardFilterKeys,
+      pitchStats,
+      statRanges
+    );
 
-    fetchPlayers(page, pageSize, sortField, sortOrder, filters);
+    fetchPlayers({
+      page,
+      limit: pageSize,
+      sortField,
+      sortOrder,
+      filters,
+    });
   };
 
   const handlePageSizeChange = (newPageSize: number) => {
@@ -126,9 +284,20 @@ export default function PlayersClient() {
     const sortField = sorting.length > 0 ? sorting[0].id : undefined;
     const sortOrder =
       sorting.length > 0 ? (sorting[0].desc ? "desc" : "asc") : "desc";
-    const filters = buildFilters(columnFilters);
+    const filters = buildFilters(
+      columnFilters,
+      playerCardFilterKeys,
+      pitchStats,
+      statRanges
+    );
 
-    fetchPlayers(1, newPageSize, sortField, sortOrder, filters);
+    fetchPlayers({
+      page: 1,
+      limit: newPageSize,
+      sortField,
+      sortOrder,
+      filters,
+    });
   };
 
   const handleSortingChange = (newSorting: SortingState) => {
@@ -136,37 +305,55 @@ export default function PlayersClient() {
     const sortField = newSorting.length > 0 ? newSorting[0].id : undefined;
     const sortOrder =
       newSorting.length > 0 ? (newSorting[0].desc ? "desc" : "asc") : "desc";
-    const filters = buildFilters(columnFilters);
+    const filters = buildFilters(
+      columnFilters,
+      playerCardFilterKeys,
+      pitchStats,
+      statRanges
+    );
 
-    fetchPlayers(currentPage, pageSize, sortField, sortOrder, filters);
+    fetchPlayers({
+      page: currentPage,
+      limit: pageSize,
+      sortField,
+      sortOrder,
+      filters,
+    });
   };
-
-  const debouncedSearch = useCallback(
-    (newFilters: ColumnFiltersState) => {
-      const sortField = sorting.length > 0 ? sorting[0].id : undefined;
-      const sortOrder =
-        sorting.length > 0 ? (sorting[0].desc ? "desc" : "asc") : "desc";
-      const filters = buildFilters(newFilters);
-
-      fetchPlayers(1, pageSize, sortField, sortOrder, filters);
-    },
-    [sorting, pageSize]
-  );
 
   const handleColumnFiltersChange = (newFilters: ColumnFiltersState) => {
     setColumnFilters(newFilters);
+  };
 
-    // 이전 타이머가 있다면 취소
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-    }
+  const handleSearch = () => {
+    const sortField = sorting.length > 0 ? sorting[0].id : undefined;
+    const sortOrder =
+      sorting.length > 0 ? (sorting[0].desc ? "desc" : "asc") : "desc";
+    const filters = buildFilters(
+      columnFilters,
+      playerCardFilterKeys,
+      pitchStats,
+      statRanges
+    );
 
-    // 새로운 타이머 설정 (500ms 후에 검색 실행)
-    const timeout = setTimeout(() => {
-      debouncedSearch(newFilters);
-    }, 500);
+    fetchPlayers({
+      page: 1,
+      limit: pageSize,
+      sortField,
+      sortOrder,
+      filters,
+    });
+  };
 
-    setSearchTimeout(timeout);
+  const handleReset = () => {
+    // 모든 필터 상태 초기화 (Zustand 스토어에서 관리)
+    resetAll();
+
+    // 서버로 전체검색 요청
+    fetchPlayers({
+      page: 1,
+      limit: 25, // 초기 페이지 크기
+    });
   };
 
   if (loading) {
@@ -359,14 +546,37 @@ export default function PlayersClient() {
         onPageSizeChange={handlePageSizeChange}
         onSortingChange={handleSortingChange}
         onColumnFiltersChange={handleColumnFiltersChange}
+        onSearch={handleSearch}
+        onReset={handleReset}
         sorting={sorting}
         columnFilters={columnFilters}
       />
 
-      <PlayerComparisonDialog
-        open={comparisonDialogOpen}
-        onOpenChange={setComparisonDialogOpen}
-        selectedPlayer={selectedPlayerForComparison}
+      {/* 선수비교 시트 */}
+      {compareCandidates.length > 0 && (
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button className="fixed bottom-4 right-4 z-50 shadow-lg rounded-full px-3 py-2 bg-primary hover:bg-primary/90">
+              👥 선수 비교 ({compareCandidates.length})
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="bottom" className="h-[600px]">
+            <SheetTitle className="sr-only">선수 비교 후보</SheetTitle>
+            <CompareSheet
+              players={compareCandidates}
+              onRemovePlayer={handleRemoveFromCompare}
+              onClearAll={handleClearCompare}
+              onCompare={handleCompare}
+            />
+          </SheetContent>
+        </Sheet>
+      )}
+
+      {/* 선수비교 다이얼로그 */}
+      <CompareDialog
+        open={compareDialogOpen}
+        onOpenChange={setCompareDialogOpen}
+        players={compareCandidates}
       />
     </>
   );

@@ -73,7 +73,9 @@ export default function UserProfile({
     const fetchUserData = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${username}`);
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/users/${username}`
+        );
 
         if (!response.ok) {
           console.error("User API 호출 실패:", response.status);
@@ -81,7 +83,6 @@ export default function UserProfile({
         }
 
         const data: UserApiResponse = await response.json();
-        console.log("User API 응답:", data);
 
         if (data.playerInfo?.universal_profiles?.[0]) {
           setUserStats(data.playerInfo.universal_profiles[0]);
@@ -165,7 +166,9 @@ export default function UserProfile({
   const ddHours = Math.floor(ddTime / 60);
 
   // 전체 시즌 데이터
-  const totalSeasonData = userStats.online_data.find((data) => data.year === "Total");
+  const totalSeasonData = userStats.online_data.find(
+    (data) => data.year === "Total"
+  );
 
   return (
     <Card className="showstats-card mb-6">
@@ -264,14 +267,21 @@ export default function UserProfile({
               {totalSeasonData && (
                 <div className="text-center">
                   {(() => {
-                    const winRate = 
-                      parseInt(totalSeasonData.wins) + parseInt(totalSeasonData.loses) === 0 ? ' - ' : Math.round(
-                      (parseInt(totalSeasonData.wins) /
-                        (parseInt(totalSeasonData.wins) +
-                          parseInt(totalSeasonData.loses))) *
-                        100
+                    const winRate =
+                      parseInt(totalSeasonData.wins) +
+                        parseInt(totalSeasonData.loses) ===
+                      0
+                        ? " - "
+                        : Math.round(
+                            (parseInt(totalSeasonData.wins) /
+                              (parseInt(totalSeasonData.wins) +
+                                parseInt(totalSeasonData.loses))) *
+                              100
+                          );
+                    const winRateColor = getStatColor(
+                      winRate as number,
+                      "winRate"
                     );
-                    const winRateColor = getStatColor(winRate as number, "winRate");
                     return (
                       <div
                         className={`text-3xl font-bold mb-1 ${winRateColor.color}`}

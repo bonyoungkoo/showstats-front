@@ -4,6 +4,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { QueryProviders } from "./providers";
 import ServiceWorkerRegister from "@/components/common/ServiceWorkerRegister"; // ✅ 추가
+import { Toaster } from "@/components/ui/sonner";
 
 // ✅ PWA Metadata 추가
 export const metadata: Metadata = {
@@ -43,6 +44,7 @@ export default function RootLayout({
             <Footer />
           </div>
           <ServiceWorkerRegister /> {/* ✅ 여기서 Service Worker 등록 */}
+          <Toaster />
         </QueryProviders>
       </body>
     </html>

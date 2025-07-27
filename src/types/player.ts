@@ -1,5 +1,26 @@
+export type PitchType =
+  | "4-Seam Fastball"
+  | "2-Seam Fastball"
+  | "Running Fastball"
+  | "Sinker"
+  | "Cutter"
+  | "ChangeUp"
+  | "Circle Change"
+  | "Vulcan Change"
+  | "Forkball"
+  | "Palmball"
+  | "Splitter"
+  | "Screwball"
+  | "Knuckleball"
+  | "Curveball"
+  | "12-6 Curve"
+  | "Knuckle Curve"
+  | "Sweeping Curve"
+  | "Slider"
+  | "Sweeper"
+  | "Slurve";
 export interface Pitch {
-  name: string;
+  name: PitchType;
   speed: number;
   control: number;
   movement: number;

@@ -9,6 +9,7 @@ import StatsCharts from "@/components/games/StatsCharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { useEffect, Suspense, useState } from "react";
+import { useFilterStore } from "@/lib/filter-store";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -51,6 +52,7 @@ function GamesPageContent() {
   const teammateUsername = searchParams.get("teammateUsername") || "";
   const teamName = searchParams.get("teamName") || "";
   const { addSearch } = useRecentSearches();
+  const { resetAll } = useFilterStore();
   const [page, setPage] = useState<number>(1);
   const [games, setGames] = useState<
     (GameListItem & { display_date?: string; display_pitcher_info?: string })[]
@@ -184,7 +186,13 @@ function GamesPageContent() {
             <p className="text-muted-foreground">
               게임 데이터를 불러올 수 없습니다: {gamesError.message}
             </p>
-            <Button onClick={() => router.push("/")} className="mt-4">
+            <Button
+              onClick={() => {
+                resetAll();
+                router.push("/");
+              }}
+              className="mt-4"
+            >
               홈으로 돌아가기
             </Button>
           </CardContent>
@@ -205,7 +213,14 @@ function GamesPageContent() {
             <p className="text-muted-foreground mb-4">
               게임 기록을 보려면 사용자명이 필요합니다.
             </p>
-            <Button onClick={() => router.push("/")}>홈에서 검색하기</Button>
+            <Button
+              onClick={() => {
+                resetAll();
+                router.push("/");
+              }}
+            >
+              홈에서 검색하기
+            </Button>
           </CardContent>
         </Card>
       </div>
