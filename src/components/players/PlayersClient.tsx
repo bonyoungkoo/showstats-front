@@ -336,6 +336,11 @@ export default function PlayersClient() {
       statRanges
     );
 
+    if (columnFilters.find((filter) => filter.id === "card")) {
+      filters.name = columnFilters.find((filter) => filter.id === "card")
+        ?.value as string;
+    }
+
     fetchPlayers({
       page: 1,
       limit: pageSize,

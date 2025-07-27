@@ -92,8 +92,8 @@ export const createColumns = (
     },
   },
   {
-    accessorKey: "name",
-    id: "카드",
+    accessorKey: "card",
+    id: "card",
     header: "카드",
     cell: ({ row }) => {
       const player = row.original;

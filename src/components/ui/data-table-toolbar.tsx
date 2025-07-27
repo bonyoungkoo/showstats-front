@@ -302,9 +302,9 @@ export function DataTableToolbar<TData>({
         <div className="flex flex-col gap-2 sm:hidden">
           <Input
             placeholder="선수명으로 검색..."
-            value={(table.getColumn("카드")?.getFilterValue() as string) ?? ""}
+            value={(table.getColumn("card")?.getFilterValue() as string) ?? ""}
             onChange={(event) =>
-              table.getColumn("카드")?.setFilterValue(event.target.value)
+              table.getColumn("card")?.setFilterValue(event.target.value)
             }
             className="h-8 w-full"
           />
@@ -329,9 +329,9 @@ export function DataTableToolbar<TData>({
         <div className="hidden sm:flex items-center gap-2">
           <Input
             placeholder="선수명으로 검색..."
-            value={(table.getColumn("카드")?.getFilterValue() as string) ?? ""}
+            value={(table.getColumn("card")?.getFilterValue() as string) ?? ""}
             onChange={(event) =>
-              table.getColumn("카드")?.setFilterValue(event.target.value)
+              table.getColumn("card")?.setFilterValue(event.target.value)
             }
             className="h-8 w-[250px] lg:w-[250px]"
           />

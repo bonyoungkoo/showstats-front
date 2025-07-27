@@ -23,7 +23,7 @@ export function DataTableViewOptions<TData>({
   const getColumnDisplayName = (columnId: string) => {
     const columnNames: Record<string, string> = {
       ovr: "오버롤",
-      카드: "카드",
+      card: "카드",
       bat_hand: "타격 방향",
       display_position: "포지션",
       throw_hand: "투구 방향",
