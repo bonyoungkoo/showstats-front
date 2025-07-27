@@ -262,7 +262,7 @@ export default function CompareDialog({
             {/* 능력치 비교 섹션 */}
             <Card className="overflow-hidden bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700">
               <CardHeader className="border-b border-gray-700">
-                <CardTitle className="text-center text-lg font-semibold text-white">
+                <CardTitle className="text-center text-lg font-semibold text-white pt-1">
                   능력치 비교
                 </CardTitle>
               </CardHeader>
