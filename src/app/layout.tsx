@@ -6,7 +6,7 @@ import { QueryProviders } from "./providers";
 import ServiceWorkerRegister from "@/components/common/ServiceWorkerRegister";
 import { Toaster } from "@/components/ui/sonner";
 import GoogleAnalytics from "@/app/ga/GoogleAnalytics";
-import usePageView from "./ga/usePageView";
+import GAProvider from "./ga/GAProvider";
 
 // ✅ PWA Metadata 추가
 export const metadata: Metadata = {
@@ -38,11 +38,10 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  usePageView();
-
   return (
     <html lang="ko">
       <body className="antialiased min-h-screen bg-background text-foreground">
+        <GAProvider />
         <GoogleAnalytics />
         <QueryProviders>
           <div className="flex flex-col min-h-screen">

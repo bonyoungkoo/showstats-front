@@ -2,18 +2,22 @@
 
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
+import { GA_ID, isGAEnabled } from "./ga";
 
-export default function usePageView() {
+export function usePageView() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    const url = pathname + searchParams.toString();
+    if (!isGAEnabled) return;
+    if (typeof window === "undefined" || !window.gtag) return;
+    if (!pathname) return;
 
-    if (window.gtag) {
-      window.gtag("config", process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID, {
-        page_path: url,
-      });
-    }
+    const query = searchParams?.toString();
+    const url = query ? `${pathname}?${query}` : pathname;
+
+    window.gtag("config", GA_ID, {
+      page_path: url,
+    });
   }, [pathname, searchParams]);
 }
