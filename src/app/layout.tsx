@@ -8,8 +8,10 @@ import { Toaster } from "@/components/ui/sonner";
 
 // ✅ PWA Metadata 추가
 export const metadata: Metadata = {
-  title: "ShowStats - MLB The Show 통계 분석",
-  description: "MLB The Show 야구 게임 전적 조회 및 심화 분석 플랫폼",
+  metadataBase: new URL("https://showstats.dugout.dev"),
+  title: "ShowStats | MLB The Show 25 전적 분석 · 경기 로그 파싱 · 선수 DB",
+  description:
+    "MLB The Show 25 전적 조회 및 심화 분석 플랫폼입니다. OPS, 타율, 타점 등 상세 스탯과 경기 로그 자동 파싱, 선수 DB 검색 기능을 제공하여 플레이어와 카드 정보를 한눈에 확인할 수 있습니다.",
   manifest: "/manifest.json",
   icons: {
     icon: [
